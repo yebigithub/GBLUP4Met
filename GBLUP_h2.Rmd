@@ -1,0 +1,805 @@
+---
+title: "GBLUP_h2"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+source("functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+
+```{r}
+load_h2 = function(prepro, gblup){
+  load(paste0("../temp/", prepro,"/", gblup, "/Control_",gblup,"_h2.rda" ))
+  h2varcon <- as.data.frame(do.call(rbind, h2L))
+  # h2varcon = h2varcon[-30,] #remove d3 from met. 
+  load(paste0("../temp/", prepro,"/", gblup, "/Stress_",gblup,"_h2.rda" ))
+  h2vartrt <- as.data.frame(do.call(rbind, h2L))
+  # h2vartrt = h2vartrt[-30,]
+  h2 = c(h2varcon$h2, h2vartrt$h2)
+  varE = c(h2varcon$varE, h2vartrt$varE)
+  varG = c(h2varcon$varG, h2vartrt$varG)
+  df = data.frame(Met=met_names, 
+                  h2=h2, 
+                  varE = varE, 
+                  varG = varG, 
+                  Treatment = rep(c("Control", "Stress"), each=66))
+  
+  df.long <- reshape2::melt(df, id.vars = c('Met', 'Treatment'))
+  
+  
+  h2.df.long <- df.long %>% filter(variable == 'h2') %>% droplevels()
+  colnames(h2.df.long) <- c("Met", "Treatment", "variable", "value")
+  h2.df.long$Treatment <- as.factor(h2.df.long$Treatment)
+  h2.df.long$Met <- factor(h2.df.long$Met, levels=unique(h2.df.long$Met))
+  h2.df.long$Kernel <- paste0(prepro, "-G-", gblup)
+  return(h2.df.long)
+}
+
+h22L = list()
+m= 1
+for(i in c("log_lmer")){
+  for(j in c("sommer")){
+        h22L[[m]] = load_h2(i, j)
+        m = m+1
+  }
+        }
+```
+
+
+###heritability plot
+```{r}
+H2h2.df.long <- rbind.data.frame(h22L[[1]])
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)]
+h2_scatter <- ggplot(H2h2.df.long, aes(x=Met, y=value)) + 
+  geom_point(aes(colour=Treatment), size=2) +
+  # geom_text(hjust=0, vjust=0, size = 2)+
+  facet_grid(rows = vars(Treatment))+
+  labs(x="Metabolite", y = "Heritability") +
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.2,0.4,0.6,0.8, 1)) +
+  # theme_classic()+
+  theme_bw()+
+  scale_color_manual(values = my_colors)+
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8),
+        axis.title.y = element_text(margin = margin(r=6)))
+h2_scatter
+# dev.print(pdf, file="../temp/h2_scatter_plot.pdf", height=6, width=10)
+```
+
+
+
+```{r}
+df = h22L[[1]]
+comp_h2 = compare_plot_generator(df = H2h2.df.long, 
+                       up_thr = 0.02, 
+                       low_thr = 0.2,
+                       limits_range = c(0,0.8),
+                       breaks_range = seq(0,0.8,0.1))
+comp_h2
+# dev.print(pdf, file="../temp/h2_compare.pdf", height=8, width=8)
+```
+
+```{r}
+# cars = df_wide[,4:5]
+# colnames(cars) = c("speed", "dist")
+```
+
+
+```{r}
+# model <- lm(Control ~ Stress, data = df_wide)
+# ci90 <- predict(model, df_wide, interval = "confidence", level = 0.90)
+# ci95 <- predict(model, df_wide, interval = "confidence", level = 0.95)
+# ci99 <- predict(model, df_wide, interval = "confidence", level = 0.99)
+# 
+# ci_pred <- ci_pred <- as.data.frame(ci90) %>% 
+#   mutate(ID = "90%") %>% 
+#   bind_rows(as.data.frame(ci95) %>% 
+#               mutate(ID = "95%"),
+#             as.data.frame(ci99) %>% 
+#               mutate(ID = "99%")
+#               )
+# 
+# final_data <- df_wide %>% 
+#   bind_cols(
+#     ci_pred %>%
+#       remove_rownames() %>% 
+#       pivot_wider(names_from = ID, values_from = c(lwr, upr)) %>% 
+#       unnest()
+#   ) %>%
+#   pivot_longer(names_to = "key", values_to = "value", cols = 4:9) %>% 
+#   separate(key, into = c("Type", "Level"), sep = "_")%>% 
+#   pivot_wider(names_from = Type, values_from = value) 
+# 
+# final_data %>% 
+#   ggplot(aes(x = Stress, y = Control, color = Level)) +
+#   geom_point(colour = "midnightblue", alpha = 0.5) +
+#   geom_smooth(method = "lm", se = F, colour = "brown") +
+#   geom_line(aes(y = lwr), lty = 2) +
+#   geom_line(aes(y = upr), lty = 2) +
+#   labs(x = "Control", y = "Stress", color = NULL) +
+#   theme_test() +
+#   theme(legend.position = c(0.08, 0.85))
+```
+
+
+## h2 density plot
+```{r}
+df = h22L[[1]]
+h2_density = density_plot_generator(df = df,
+                      my_colors=RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)],
+                      limits_range = c(0,1),
+                      breaks_range = seq(0,1,0.2),
+                      x_name = "Heritability",
+                      ylim = NULL,
+                      lines = T)
+h2_density
+# dev.print(pdf, file=paste0("../temp/h2_density.pdf"), height=4, width=8)
+```
+```{r}
+ggarrange(h2_scatter,  
+          NULL,
+          ggarrange(h2_density, comp_h2,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = F,
+                    widths = c(1.2, 1)), 
+          nrow = 3, 
+          labels = c("(A)", ""), vjust=1.2, hjust=0,
+          heights = c(1.8, 0.1, 1),# Labels of the scatter plot
+          common.legend = F ) 
+dev.print(pdf, file=paste0("../temp/h2_plots.pdf"), height=10, width=10)
+```
+
+
+
+## h2 density plot --- FA
+```{r}
+####functions.R
+FA_h2_den=FA_density_plot_generator(df=h22L[[1]],
+                          my_colors = RColorBrewer::brewer.pal(11, 'Spectral')[c(11,10,9,8,7,5,4,3,2,1)],
+                          limits_range = c(0,1),
+                          breaks_range = seq(0,1,0.2),
+                          x_name = "Heritability", 
+                          ylim = NULL)
+FA_h2_den
+# dev.print(pdf, file=paste0("../temp/FA_h2_density.pdf"), height=4, width=8)
+```
+
+
+
+##Loading pred corr 
+```{r}
+path.bglr = "../ARC_outputs/Met_same_genotypes_per_treatment/GBLUP/outputs_GBLUP/"
+PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm=NULL)
+# PreCorr = PreCorr %>% filter(Met != "ribitol")%>% droplevels()
+
+
+path.GK = "../ARC_outputs/Met_same_genotypes_per_treatment/GK/outputs_GK/"
+PreCorr_GK = load_pred_corr_func(path=path.GK, kernel = "GK", namm=NULL)
+# PreCorr_GK = PreCorr_GK %>% filter(Met != "ribitol") %>% droplevels()
+```
+
+```{r}
+VGG16_RF = list()
+m = 1
+for (i in seq(10,100,10)){
+  path = paste0("../ARC_outputs/Met_same_genotypes_per_treatment/DLs_RF/VGG16_cv", i, ".csv")
+  vgg_rr1 = read.csv(path)
+  VGG16_RF[[m]] = vgg_rr1
+  m = m+1
+}
+VGG16_RF = do.call(rbind, VGG16_RF)
+```
+
+
+
+```{r}
+# VGG16_RR_1 = DLs_RR_reader("VGG16", 1)
+# VGG16_RR_100 = DLs_RR_reader("VGG16", 100)
+# VGG16_RR_1000 = DLs_RR_reader("VGG16", 1000)
+# VGG16_RR_10000 = DLs_RR_reader("VGG16", 10000)
+# PreCorr_vgg16_RR_1 = DL_extractor_func(df = VGG16_RR_1, met_names, "VGG16_RR_1")
+# PreCorr_vgg16_RR_100 = DL_extractor_func(df = VGG16_RR_100, met_names, "VGG16_RR_100")
+# PreCorr_vgg16_RR_1000 = DL_extractor_func(df = VGG16_RR_1000, met_names, "VGG16_RR_1000")
+# PreCorr_vgg16_RR_10000 = DL_extractor_func(df = VGG16_RR_10000, met_names, "VGG16_RR_10000")
+# 
+# ResNet50_RR_1 = DLs_RR_reader("ResNet50", 1)
+# ResNet50_RR_100 = DLs_RR_reader("ResNet50", 100)
+# ResNet50_RR_1000 = DLs_RR_reader("ResNet50", 1000)
+# ResNet50_RR_10000 = DLs_RR_reader("ResNet50", 10000)
+# PreCorr_ResNet50_RR_1 = DL_extractor_func(df = ResNet50_RR_1, met_names, "ResNet50_RR_1")
+# PreCorr_ResNet50_RR_100 = DL_extractor_func(df = ResNet50_RR_100, met_names, "ResNet50_RR_100")
+# PreCorr_ResNet50_RR_1000 = DL_extractor_func(df = ResNet50_RR_1000, met_names, "ResNet50_RR_1000")
+# PreCorr_ResNet50_RR_10000 = DL_extractor_func(df = ResNet50_RR_10000, met_names, "ResNet50_RR_10000")
+# 
+# 
+# EfficientNetB7_RR_1 = DLs_RR_reader("EfficientNetB7", 1)
+# EfficientNetB7_RR_100 = DLs_RR_reader("EfficientNetB7", 100)
+# EfficientNetB7_RR_1000 = DLs_RR_reader("EfficientNetB7", 1000)
+# EfficientNetB7_RR_10000 = DLs_RR_reader("EfficientNetB7", 10000)
+# PreCorr_EfficientNetB7_RR_1 = DL_extractor_func(df = EfficientNetB7_RR_1, met_names, "EfficientNetB7_RR_1")
+# PreCorr_EfficientNetB7_RR_100 = DL_extractor_func(df = EfficientNetB7_RR_100, met_names, "EfficientNetB7_RR_100")
+# PreCorr_EfficientNetB7_RR_1000 = DL_extractor_func(df = EfficientNetB7_RR_1000, met_names, "EfficientNetB7_RR_1000")
+# PreCorr_EfficientNetB7_RR_10000 = DL_extractor_func(df = EfficientNetB7_RR_10000, met_names, "EfficientNetB7_RR_10000")
+
+```
+
+
+```{r}
+# VGG16 <- read.csv("../temp/DLs/VGG16.csv")
+# PreCorr_vgg16 = DL_extractor_func(df = VGG16, met_names, "VGG16")
+# 
+# 
+# VGG16_RR <- read.csv("../temp/DLs/VGG16_RidgeRegression.csv") 
+# PreCorr_vgg16_RR = DL_extractor_func(df = VGG16_RR, met_names, "VGG16_RR")
+# # PreCorr_vgg16_RF = DL_extractor_func(df = VGG16_RF, met_names, "VGG16_RF")
+# 
+# ResNet <- read.csv("../temp/DLs/ResNet50.csv")
+# PreCorr_resnet = DL_extractor_func(df = ResNet, met_names, "ResNet")
+# 
+# Eff <- read.csv("../temp/DLs/EfficientNetB7.csv")
+# PreCorr_eff = DL_extractor_func(df = Eff, met_names, "Eff")
+```
+
+```{r}
+# path.GK0 = "../ARC_outputs/Met_same_genotypes_per_treatment/GK/outputs_GK_ori/"
+# PreCorr_GK0 = load_pred_corr_func(path=path.GK0, kernel = "GK0", namm=NULL)
+```
+
+## density plot for bglr-G predcorr
+```{r}
+mu_perMet = ddply(PreCorr, c("Treatment", 'Met'), summarise, value=mean(Corr, na.rm=T))
+Pred_Corr_dens = density_plot_generator(df=mu_perMet, 
+                       my_colors=RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)],
+                       limits_range = c(-0.2,1),
+                       breaks_range = seq(-0.2,1,0.2), 
+                       x_name = "Prediction accuracy",
+                       ylim = NULL,
+                       lines = T)
+Pred_Corr_dens
+# dev.print(pdf, file=paste0("../temp/BGLR_G_PredCorr_density.pdf"), height=4, width=8)
+```
+
+```{r}
+comp_PreCorr = compare_plot_generator(df = mu_perMet, 
+                       up_thr = 0.02, 
+                       low_thr = 0.15,
+                       limits_range = c(0,0.7),
+                       breaks_range = seq(0,0.7,0.1))
+
+comp_PreCorr
+# dev.print(pdf, file="../temp/Precorr_compare.pdf", height=8, width=8)
+```
+
+## FA_summary
+```{r}
+h2_FA_summ = FA_summary_func(df = h22L[[1]])
+ggcorr_FA_summ = FA_summary_func(df = df_ggcorr)
+corr_FA_summ = FA_summary_func(df = mu_perMet)
+
+```
+
+
+##FA Pred corr density plot
+```{r}
+mu_perMet = ddply(PreCorr, c("Treatment", 'Met'), summarise, value=mean(Corr, na.rm=T))
+df = mu_perMet
+
+
+FA_PreCorr_GBLUP_den=FA_density_plot_generator(df=mu_perMet,
+                                                my_colors = RColorBrewer::brewer.pal(11, 'Spectral')[c(11,10,9,8,7,5,4,3,2,1)],
+                                                limits_range = c(0, 1),
+                                                breaks_range = seq(0,1,0.2),
+                                                x_name = "Prediction accuracy",
+                                                ylim = NULL)
+  
+FA_PreCorr_GBLUP_den
+# dev.print(pdf, file=paste0("../temp/FA_BGLR_G_PredCorr_density.pdf"), height=4, width=8)
+```
+
+
+```{r}
+ggarrange(FA_h2_den, 
+          FA_PreCorr_GBLUP_den, 
+          nrow = 2, 
+          labels = c("(A)", "(B)"), 
+          vjust=-0.1, 
+          common.legend = T)
+
+dev.print(pdf, file="../temp/FA_h2_Precorr.pdf", height =9, width = 7)
+```
+
+
+# ######Boxplot for PredCorr BGLR-G
+```{r}
+library(plyr)
+# df = vgg
+# df$Corr = vgg$value
+
+df = PreCorr
+mu <- ddply(df, "Treatment", summarise, corr.mean=mean(Corr, na.rm=T))
+head(mu)
+
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 3)]
+
+Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr)) + 
+           facet_grid(rows = vars(Treatment))+
+           geom_boxplot(aes(fill=Treatment), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.3)+
+           labs(x="Metabolite", y = "Prediction accuracy") +
+           theme_bw()+
+           geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+           scale_y_continuous(limits=c(-0.6, 0.9), breaks=c(-0.6,-0.4,-0.2, 0, 0.2,0.4,0.6, 0.8, 1)) +
+           scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+           scale_color_manual(values = my_colors)+
+           theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                 axis.text.y=element_text(size=8))
+
+
+Pred_Cor_boxplot
+# dev.print(pdf, file="../temp/boxplot_BGLR_G.pdf", height = 6, width = 10)
+```
+
+```{r}
+library(ggpubr)
+ggarrange(Pred_Cor_boxplot,  
+          NULL,
+          ggarrange(Pred_Corr_dens, comp_PreCorr,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = F,
+                    widths = c(1.2, 1)), 
+          nrow = 3, 
+          labels = c("(A)", ""), vjust=1.5, hjust=0,
+          heights = c(1.8, 0.1, 1),# Labels of the scatter plot
+          common.legend = F ) 
+# ggarrange(Pred_Cor_boxplot, 
+#           NULL,
+#           Pred_Corr_dens, 
+#           nrow = 3, 
+#           heights = c(3,0.2,1),
+#           labels = c("(A)","", "(B)"), 
+#           vjust=-0.1, 
+#           common.legend = T)
+dev.print(pdf, file="../temp/GBLUP_plots.pdf", height=10, width=10)
+```
+
+# ###### Boxplot to compare models
+```{r}
+# combb = rbind.data.frame(PreCorr, 
+#                          # PreCorr_vgg16_RF)
+#                          PreCorr_vgg16,
+#                          PreCorr_vgg16_RR,
+#                          PreCorr_vgg16_RF,
+#                          PreCorr_resnet,
+#                          PreCorr_eff)
+# 
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 9,8, 4, 3, 2)]
+# 
+# lmmm = c(min(combb$Corr), max(combb$Corr))
+# 
+# dp10 <- ggplot(combb, aes(x=Met, y=Corr)) +
+#            facet_grid(rows = vars(Treatment))+
+#            geom_boxplot(aes(fill=Kernel), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.2)+
+#            labs(x="Metabolite", y = "Predictive correlation") +
+#            theme_bw()+
+#            scale_y_continuous(limits=c(-0.61, 0.90), breaks=seq(-0.60, 0.90, 0.2)) +
+#            scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+#            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#                  axis.text.y=element_text(size=8))+
+#            # geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+#            scale_color_manual(values = my_colors)
+# 
+# 
+# dp10
+# dev.print(pdf, file="../temp/DLs_boxplot.pdf", height = 10, width = 20)
+```
+
+
+#### Barplot
+- BGLR_G
+- BGLR_GK
+- Mega_G
+- Mega_GK
+```{r}
+# vgg16_RR_1_mu <- pred_mean_generator(PreCorr_vgg16_RR_1)
+# vgg16_RR_100_mu <- pred_mean_generator(PreCorr_vgg16_RR_100)
+# vgg16_RR_1000_mu <- pred_mean_generator(PreCorr_vgg16_RR_1000)
+# vgg16_RR_10000_mu <- pred_mean_generator(PreCorr_vgg16_RR_10000)
+# vgg16_RR_comp = cbind(vgg16_RR_1_mu$corr.mean,
+#                       vgg16_RR_100_mu$corr.mean,
+#                       vgg16_RR_1000_mu$corr.mean,
+#                       vgg16_RR_10000_mu$corr.mean)
+# 
+# vgg16_RR_mu = apply(vgg16_RR_comp, 1, max)
+# vgg16_RR_mu = cbind.data.frame(vgg16_RR_1_mu[,1:2],
+#                            corr.mean = vgg16_RR_mu)
+# 
+# 
+# ResNet50_RR_1_mu <- pred_mean_generator(PreCorr_ResNet50_RR_1)
+# ResNet50_RR_100_mu <- pred_mean_generator(PreCorr_ResNet50_RR_100)
+# ResNet50_RR_1000_mu <- pred_mean_generator(PreCorr_ResNet50_RR_1000)
+# ResNet50_RR_10000_mu <- pred_mean_generator(PreCorr_ResNet50_RR_10000)
+# ResNet50_RR_comp = cbind(ResNet50_RR_1_mu$corr.mean,
+#                       ResNet50_RR_100_mu$corr.mean,
+#                       ResNet50_RR_1000_mu$corr.mean,
+#                       ResNet50_RR_10000_mu$corr.mean)
+# 
+# ResNet50_RR_mu = apply(ResNet50_RR_comp, 1, max)
+# ResNet50_RR_mu = cbind.data.frame(ResNet50_RR_1_mu[,1:2],
+#                            corr.mean = ResNet50_RR_mu)
+# 
+# EfficientNetB7_RR_1_mu <- pred_mean_generator(PreCorr_EfficientNetB7_RR_1)
+# EfficientNetB7_RR_100_mu <- pred_mean_generator(PreCorr_EfficientNetB7_RR_100)
+# EfficientNetB7_RR_1000_mu <- pred_mean_generator(PreCorr_EfficientNetB7_RR_1000)
+# EfficientNetB7_RR_10000_mu <- pred_mean_generator(PreCorr_EfficientNetB7_RR_10000)
+# EfficientNetB7_RR_comp = cbind(EfficientNetB7_RR_1_mu$corr.mean,
+#                       EfficientNetB7_RR_100_mu$corr.mean,
+#                       EfficientNetB7_RR_1000_mu$corr.mean,
+#                       EfficientNetB7_RR_10000_mu$corr.mean)
+# 
+# EfficientNetB7_RR_mu = apply(EfficientNetB7_RR_comp, 1, max)
+# EfficientNetB7_RR_mu = cbind.data.frame(EfficientNetB7_RR_1_mu[,1:2],
+#                            corr.mean = EfficientNetB7_RR_mu)
+```
+
+```{r}
+# vgg_mu <- pred_mean_generator(PreCorr_vgg16)
+# vgg_mu_RR <- pred_mean_generator(PreCorr_vgg16_RR)
+# vgg_mu_RF <- pred_mean_generator(PreCorr_vgg16_RF)
+# resnet_mu <- pred_mean_generator(PreCorr_resnet)
+# eff_mu <- pred_mean_generator(PreCorr_eff)
+```
+
+```{r}
+DLs_model_names = c("VGG16", "ResNet50", "EfficientNetB7","InceptionV3", "MobileNetV2", "DenseNet201")
+DLs_RR_mu_L = list()
+PreCorr_DL_L = list()
+for (i in 1:6){
+  model_name = DLs_model_names[i]
+  DLs_RR_mu_L[[i]] = DLs_RR_mu_generator(model = model_name)
+  PreCorr_DL_L[[i]] = DLs_RR_PreCorr_generator(model = model_name)
+}
+names(DLs_RR_mu_L) = DLs_model_names
+names(PreCorr_DL_L) = DLs_model_names
+```
+
+```{r}
+BGLR_G_mu <- pred_mean_generator(PreCorr)
+BGLR_GK_mu <- pred_mean_generator(PreCorr_GK) 
+mega_G_mu <- pred_mean_generator(PreCorr_mega_G) #MegaLMM_test.Rmd
+
+mega_GK_mu0.2 <- pred_mean_generator(PreCorr0.2) #GK.Rmd
+mega_GK_mu0.4 <- pred_mean_generator(PreCorr0.4)
+mega_GK_mu0.6 <- pred_mean_generator(PreCorr0.6)
+mega_GK_mu0.8 <- pred_mean_generator(PreCorr0.8)
+
+mega_GK_comp = cbind(GK0.2 = mega_GK_mu0.2$corr.mean,
+                     GK0.4 = mega_GK_mu0.4$corr.mean,
+                     GK0.6 = mega_GK_mu0.6$corr.mean,
+                     GK0.8 = mega_GK_mu0.8$corr.mean)
+mega_GK_mu = apply(mega_GK_comp, 1, max)
+mega_GK_mu = cbind.data.frame(mega_GK_mu0.2[,1:2],
+                           corr.mean = mega_GK_mu)
+```
+
+```{r}
+
+```
+
+```{r}
+# mm <- plyr::ddply(G_GK_dff, c("Treatment"), summarise, corr.mean=mean(Corr_diff, na.rm=T), corr.me = median(Corr_diff, na.rm=T))
+BGLR_G_mu$corr.mean[BGLR_G_mu$corr.mean < 0.1]=0
+
+DLs_model_names_selected = c("VGG16", "ResNet50", "EfficientNetB7","InceptionV3", "MobileNetV2", "DenseNet201")
+dff_DLs_L = list()
+for (i in 1:length(DLs_model_names_selected)){
+  dff_DLs_L[[i]] = pred_dff_generator(df1 = BGLR_G_mu,
+                                     df2 = DLs_RR_mu_L[[DLs_model_names_selected[i]]],
+                                     Method=DLs_model_names_selected[i])
+}
+
+# dff_vgg=pred_dff_generator(df1=BGLR_G_mu, 
+#                    df2=vgg16_RR_mu, 
+#                    Method="VGG")
+# 
+# dff_resnet=pred_dff_generator(df1=BGLR_G_mu, 
+#                    df2=ResNet50_RR_mu, 
+#                    Method="ResNet")
+# dff_eff=pred_dff_generator(df1=BGLR_G_mu, 
+#                    df2=EfficientNetB7_RR_mu, 
+#                    Method="EfficientNet")
+# 
+dff_bglr_gk=pred_dff_generator(df1=BGLR_G_mu,
+                   df2=BGLR_GK_mu,
+                   Method="RKHS")
+dff_gblup = pred_dff_generator(df1=BGLR_G_mu,
+                               df2=BGLR_G_mu,
+                               Method="GBLUP")  
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(1:4, 9:11)]
+ccc = rbind(do.call(rbind, dff_DLs_L),
+            dff_bglr_gk)
+            
+ccc$Method = factor(ccc$Method, levels=c(DLs_model_names, "RKHS", "GBLUP"))
+
+ttt = ccc[!is.infinite(ccc$value), ]
+ttt = ttt %>% filter(value >= 0) %>% droplevels()
+limm = c(floor(min(ttt$value)), ceiling(max(ttt$value)))
+dp_diff <- ggplot(ttt, aes(y=value, x=Met, fill=Method)) +
+            # geom_line()+
+            geom_bar(stat="identity",position="dodge", width = 1)+
+            facet_grid(rows = vars(Treatment))+
+            labs(x="Metabolite", y = "Percentage difference (%)") +
+            theme_bw()+
+            geom_hline(aes(yintercept = 0), color = 'darkgrey', linetype='solid', linewidth = 0.3)+
+            # scale_y_continuous(limits=c(0, 90), breaks=seq(0,90,10)) +
+            # scale_y_continuous(limits=c(0,400)) +
+            scale_fill_manual(values = alpha(my_colors, 1))+
+            # scale_color_manual(values = my_colors)+
+            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                  axis.text.y=element_text(size=8))
+
+# dp_diff <- ggplot(ttt, aes(y=Met, x=value, fill=Method)) +
+#             # geom_line()+
+#             geom_bar(stat="identity",position="dodge")+
+#             facet_grid(cols = vars(Treatment))+
+#             labs(x="Metabolite", y = "Percentage difference (%)") +
+#             theme_bw()+
+#             geom_vline(aes(xintercept = 0), color = 'darkgrey', linetype='solid', linewidth = 0.3)+
+#             scale_x_continuous(limits=c(0, 90), breaks=seq(-160,90,50)) +
+#             # scale_y_continuous(limits=c(0,400)) +
+#             scale_fill_manual(values = alpha(my_colors, 1))+
+#             # scale_color_manual(values = my_colors)+
+#             theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#                   axis.text.y=element_text(size=8))
+
+dp_diff
+dev.print(pdf, file="../temp/DL_dff_barplot_0.1_positive.pdf", height = 6, width = 10)
+
+# dev.print(pdf, file="../temp/DL_dff_barplot_0.1.pdf", height = 6, width = 10)
+# summary(ccc$value)
+```
+
+```{r}
+# mm <- plyr::ddply(G_GK_dff, c("Treatment"), summarise, corr.mean=mean(Corr_diff, na.rm=T), corr.me = median(Corr_diff, na.rm=T))
+BGLR_G_mu$corr.mean[BGLR_G_mu$corr.mean < 0.1]=0
+dff_bglr_gk=pred_dff_generator(df1=BGLR_G_mu, 
+                   df2=BGLR_GK_mu, 
+                   Method="RKHS")
+dff_mega_g=pred_dff_generator(df1=BGLR_G_mu, 
+                   df2=mega_G_mu, 
+                   Method="MegaLMM-G")
+dff_mega_gk=pred_dff_generator(df1=BGLR_G_mu, 
+                   df2=mega_GK_mu, 
+                   Method="MegaLMM-GK")
+  
+my_colors <- RColorBrewer::brewer.pal(11, 'PiYG')[c(9,  2)]
+
+ccc = rbind(dff_mega_g, dff_mega_gk)
+ccc$Method = factor(ccc$Method, levels=c("RKHS", "MegaLMM-G", "MegaLMM-GK"))
+
+ttt = ccc[!is.infinite(ccc$value), ]
+# ttt = ttt %>% filter(value >= 0) %>% droplevels()
+limm = c(floor(min(ttt$value)), ceiling(max(ttt$value)))
+
+dp_diff <- ggplot(ttt, aes(x=Met, y=value, fill=Method)) + 
+            geom_bar(stat="identity",position="dodge")+
+            facet_grid(rows = vars(Treatment))+
+            labs(x="Metabolite", y = "Percentage difference (%)") +
+            theme_bw()+
+            geom_hline(aes(yintercept = 0), color = 'grey', linetype='solid', linewidth = 0.3)+
+            scale_y_continuous(limits=c(-25, 50), breaks=seq(-30,50,10)) +
+            scale_fill_manual(values = alpha(my_colors, 0.8))+
+            # scale_color_manual(values = my_colors)+
+            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                  axis.text.y=element_text(size=8),
+                  axis.title.y = element_text(margin = margin(r=6)),
+                  legend.position = "right")
+
+dp_diff
+
+# dev.print(pdf, file="../temp/mega_bglr_diff_barplot.pdf", height = 6, width = 20)
+```
+
+### density plot to BGLR-G v.s. BGLR-GK
+```{r}
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)]
+
+
+# dff_bglr_gk_dens=density_plot_generator(df=dff_bglr_gk, 
+#                        my_colors=my_colors,
+#                        limits_range = c(-40,40),
+#                        breaks_range = seq(-40,40,10), 
+#                        x_name = "Percentage difference (%)",
+#                        lines = F,
+#                        ylim = c(0, 0.2))
+
+dff_mega_g_dens=density_plot_generator(df=dff_mega_g, 
+                       my_colors=my_colors,
+                       limits_range = c(-40,40),
+                       breaks_range = seq(-40,40,10),  
+                       x_name = "Percentage difference (%)",
+                       lines = F,
+                       ylim = c(0, 0.2))
+
+dff_mega_gkk_dens=density_plot_generator(df=dff_mega_gk, 
+                       my_colors=my_colors,
+                       limits_range = c(-40,40),
+                       breaks_range = seq(-40,40,10),  
+                       x_name = "Percentage difference (%)",
+                       lines = F,
+                       ylim = c(0, 0.2))
+  
+  
+# print(p33)
+# dev.print(pdf, file=paste0("../temp/G_GK_PredCorr_density.pdf"), height=4, width=8)
+```
+```{r}
+library(ggpubr)
+
+ggarrange(dp_diff, 
+          NULL,
+          ggarrange(dff_mega_g_dens, dff_mega_gkk_dens,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = T,
+                    legend = "right"), 
+          nrow = 3, 
+          labels = "(A)",vjust=1.5, hjust=0,
+          heights = c(2, 0.1, 1)) 
+
+dev.print(pdf, file="../temp/G_GK_Mega.pdf", height = 10, width = 10)
+```
+
+
+
+### FA density plot: BGLR-GK, mega-G, mega-GK
+```{r}
+dff_bglr_gk_FAdens=FA_density_plot_generator(dff_bglr_gk,
+                                     # my_colors,
+                                     limits_range = c(-30,30),
+                                     breaks_range = seq(-30,30,10),
+                                     x_name = "Percentage difference (%)",
+                                     ylim = NULL)
+dff_mega_g_FAdens=FA_density_plot_generator(dff_mega_g,
+                                     # my_colors,
+                                     limits_range = c(-30,30),
+                                     breaks_range = seq(-30,30,10),
+                                     x_name = "Percentage difference (%)",
+                                     ylim = NULL)
+dff_mega_gk_FAdens=FA_density_plot_generator(dff_mega_gk,
+                                     # my_colors,
+                                     limits_range = c(-30,30),
+                                     breaks_range = seq(-30,30,10),
+                                     x_name = "Percentage difference (%)",
+                                     ylim = NULL)
+```
+```{r}
+library(ggpubr)
+ggarrange(dff_bglr_gk_FAdens, dff_mega_g_FAdens, dff_mega_gk_FAdens,
+                    nrow = 3, labels = c("(A)", "(B)", "(C)"), vjust=-0.1, common.legend = T)
+
+dev.print(pdf, file="../temp/FA_dens_BGLR_Mega.pdf", height =14, width = 7)
+```
+```{r}
+FA_summary_func(df=dff_bglr_gk)
+FA_summary_func(df=dff_mega_g)
+FA_summary_func(df=dff_mega_gk)
+```
+
+
+
+
+################################################################################################################################################
+#Testing diff R2 in BGLR
+```{r, eval = F}
+# # path.bglr = "../ARC_outputs/GBLUP_whole/outputs_GBLUP/"
+# # path.bglr = "../ARC_outputs/BGLR_R2/outputs/"
+# # met2remove = c(13,28,30,38,62,67)
+# # met_names0 <- read.delim("../Met/raw_data/met_names.txt", header=FALSE)
+# # met_names = met_names0[-met2remove, 1]
+# 
+# load_r2_pred_corr_func <- function(path, R2, met2remove){
+#           bglr_conL <- list()
+#           bglr_trtL <- list()
+#           for (i in 1:100){
+#             bglr_conL[[i]] <- readRDS(file=file.path(path.bglr,paste0(R2 ,"/Control_bglr_r2_", R2,"_cv_",i,".RDS")))
+#             bglr_trtL[[i]] <- readRDS(file=file.path(path.bglr,paste0(R2 ,"/Stress_bglr_r2_", R2,"_cv_",i,".RDS")))
+#           }
+#           
+#           bglr.c.df <- do.call(rbind, bglr_conL)
+#           bglr.c.df = bglr.c.df[, -met2remove]
+#           colnames(bglr.c.df)= met_names
+#           
+#           bglr.t.df <- do.call(rbind, bglr_trtL)
+#           bglr.t.df = bglr.t.df[, -met2remove]
+#           
+#           colnames(bglr.t.df) = met_names
+#           
+#           
+#           temp1 <- reshape2::melt(bglr.c.df)
+#           temp2 <- reshape2::melt(bglr.t.df)
+#           temp3 <- rbind.data.frame(temp1,temp2)
+#           temp3$group <- rep(c("Control", "Stress"), each = 6700)
+#           colnames(temp3) <- c("CV", "Met", "Corr", "Treatment")
+#           temp3$Kernel = paste0("BGLR-r2-", R2)
+#           
+#           return(temp3)
+#     }
+```
+
+```{r, eval=F}
+# predCorr_0.05 = load_r2_pred_corr_func(path=path.bglr, R2=0.05, met2remove = met2remove)
+# predCorr_0.1 = load_r2_pred_corr_func(path=path.bglr, R2=0.1, met2remove = met2remove)
+# predCorr_0.3 = load_r2_pred_corr_func(path=path.bglr, R2=0.3, met2remove = met2remove)
+```
+
+## point plot for h2 v.s. PredCorr
+```{r}
+# somm_h2 = h22L[[1]]
+# somm_h2 = somm_h2[,-c(3,5)]
+# bglr_mu_perMet = mu_perMet
+# bglr_mu_perMet$Treatment=gsub("HNT", "Stress", bglr_mu_perMet$Treatment)
+# #cobine h2 and predCorr_mean values into one dataframe.
+# bglr_h2_predCorr = merge(somm_h2, bglr_mu_perMet, by = c('Met','Treatment'))
+# 
+# df = bglr_h2_predCorr
+# # library(plyr)
+# rr2 <- ddply(df, "Treatment", summarise, r2 = cor(h2, corr.mean^2, use = "complete.obs")^2)
+# 
+# # df.con = df[df$Treatment == "Control", ]
+# # df.trt = df[df$Treatment == "Stress", ]
+# # 
+# # summary(lm(data=df.con, h2~corr.mean))$r.squared
+# # summary(lm(data=df.trt, h2~corr.mean))$r.squared
+# 
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 3)]
+# 
+# ggplot(bglr_h2_predCorr, aes(x=h2, y=corr.mean^2, color=Treatment))+
+#   geom_point(size = 2)+
+#   facet_grid(rows = vars(Treatment))+
+#   labs(x="Heritability", y = "R2") +
+#   scale_y_continuous(limits=c(0, 1), breaks=c(0, 0.2,0.4,0.6,0.8, 1)) +
+#   theme_bw()+
+#   scale_color_manual(values = my_colors)+
+#   geom_abline(intercept = 0, slope = 1, linewidth = 0.3, color='red') 
+# 
+# dev.print(pdf, file="../temp/bglr_h2_r2.pdf", height = 6, width = 10)
+
+```
+
+## stacked barplot for varE varG 
+```{r}
+# var.df.long <- df.long %>% filter(variable != 'h2') %>% droplevels()
+# colnames(var.df.long) = c("Met", "Treatment", "Var", "value")
+# var.df.long$Treatment <- as.factor(var.df.long$Treatment)
+# var.df.long$Met <- factor(var.df.long$Met, levels=unique(var.df.long$Met))
+# var.df.long$Var <- factor(var.df.long$Var, levels=c("varE", "varG"))
+# 
+# my_colors <- RColorBrewer::brewer.pal(9, 'Pastel1')[c(1, 3)]
+# ggplot(var.df.long, aes(x = Met, y = value, fill=Var)) +
+#   geom_col(position = "fill")+
+#   facet_grid(rows = vars(Treatment))+
+#   theme_classic()+
+#   labs(x="Metabolite", y = "Variance component") +
+#   scale_fill_manual(values = my_colors)+
+#   theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#         axis.text.y=element_text(size=8))
+# dev.print(pdf, file="../outputs/GBLUP_whole/var.pdf", height=6, width=10)
+```

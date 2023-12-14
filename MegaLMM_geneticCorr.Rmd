@@ -1,0 +1,154 @@
+---
+title: "MegaLMM_ggcorr"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+```
+
+```{r}
+load("../temp/mega/varcov_control.RDS")
+load("../temp/mega/varcov_stress.RDS")
+```
+
+
+```{r}
+source("functions.R")
+met_names = met_name_func(mode = 'name')
+# met_names = 1:66
+```
+
+```{r}
+library(pheatmap)
+# install.packages("corrplot")
+library(corrplot)
+library(gridGraphics)
+library(grid)
+
+varcov_control.df = apply(varcov_control[-c(1:6000),,], c(2,3), mean)
+ge.corr.con = cov2cor(varcov_control.df);colnames(ge.corr.con) = rownames(ge.corr.con) = met_names
+# pheatmap(ge.corr.con, cluster_rows = F, cluster_cols = F, color = hcl.colors(20, "PiYG"), na_col="white")
+varcov_stress.df = apply(varcov_stress[-c(1:6000),,], c(2,3), mean)
+ge.corr.trt = cov2cor(varcov_stress.df);colnames(ge.corr.trt) = rownames(ge.corr.trt) = met_names
+
+# ge.corr.trt[upper.tri(ge.corr.trt)] = ge.corr.con[upper.tri(ge.corr.con)]
+
+
+p1=corrplot(ge.corr.con, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(A)", mar=c(0,0,1,0))
+# grid.echo()
+P1 <- grid.grab()
+dev.print(pdf, file=paste0("../temp/heatmap_ggcorr_mega_con.pdf"), height=6, width=10)
+p2=corrplot(ge.corr.trt, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(B)", mar=c(0,0,1,0))
+# grid.echo()
+P2 <- grid.grab()
+dev.print(pdf, file=paste0("../temp/heatmap_ggcorr_mega_trt.pdf"), height=6, width=10)
+```
+
+```{r}
+
+cor_matrix = ge.corr.con
+# Find pairs with correlation values greater than 0.5
+high_cor_pairs <- which(abs(cor_matrix) > 0.78 & cor_matrix != 1, arr.ind = TRUE)
+
+# Print the pairs and their correlation values
+for (i in 1:nrow(high_cor_pairs)) {
+  row_idx <- high_cor_pairs[i, 1]
+  col_idx <- high_cor_pairs[i, 2]
+  correlation_value <- cor_matrix[row_idx, col_idx]
+  cat("Pair:", row_idx, "-", col_idx, ", Correlation:", correlation_value, "\n")
+}
+
+```
+
+
+```{r}
+## triangle compare
+up_index = upper.tri(ge.corr.con)
+ge.corr.con1 = ge.corr.con[up_index]
+ge.corr.trt1 = ge.corr.trt[up_index]
+
+
+df = data.frame(Treatment = rep(c("Control", "Stress"), each = 2145),
+                GeCorr = c(ge.corr.con1, ge.corr.trt1))
+
+library(plyr)
+mu11 <- ddply(df, "Treatment", summarise, grp.mean=mean(GeCorr, na.rm=T), grp.me = median(GeCorr, na.rm=T))
+# head(mu11)
+
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)]
+ggplot(df, aes(x=GeCorr, color=Treatment, fill = Treatment)) + 
+  geom_density(alpha=0.6)+
+  geom_vline(data=mu11, aes(xintercept=grp.mean, color=Treatment), linetype='solid')+
+  geom_vline(data=mu11, aes(xintercept=grp.me, color=Treatment), linetype='dashed')+         
+  scale_x_continuous(limits=c(-0.31, 0.9), breaks=seq(-0.3,0.9,0.2)) +
+  labs(x="Genomic correlation", y = "Density") +
+  scale_fill_manual(values = my_colors)+
+  scale_color_manual(values = my_colors)+
+  theme_bw()
+dev.print(pdf, file=paste0("../temp/ggcorr_MegaLMM_density_", df$Kernel[1], ".pdf"), height=4, width=8)
+```
+
+```{r}
+ddply(df, "Treatment", summarise, round(summary(GeCorr, na.rm=T),2))
+```
+
+
+###########
+## heatmap for met.rr phenotypic correlation
+###########
+```{r}
+met.rr.con = read.csv("../Met/met_rr_control_named.csv")
+cor_con = cor(met.rr.con[,-c(1:2)])
+met.rr.trt = read.csv("../Met/met_rr_stress_named.csv")
+cor_trt = cor(met.rr.trt[,-c(1:2)])
+
+
+```
+
+```{r}
+
+p1=corrplot(cor_con, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(A)", mar=c(0,0,1,0))
+# grid.echo()
+P1 <- grid.grab()
+# dev.print(pdf, file=paste0("../temp/heatmap_pheno_corr_control.pdf"), height=6, width=10)
+p2=corrplot(cor_trt, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(B)", mar=c(0,0,1,0))
+# grid.echo()
+P2 <- grid.grab()
+# dev.print(pdf, file=paste0("../temp/heatmap_pheno_corr_stress.pdf"), height=6, width=10)
+
+```
+
+```{r}
+cor_matrix = cor_con
+# Find pairs with correlation values greater than 0.5
+high_cor_pairs <- which(cor_matrix >= 0.8 & cor_matrix != 1, arr.ind = T) #arr.ind can show the relative position of each value satisfied condition.
+
+# Print the pairs and their correlation values
+for (i in 1:nrow(high_cor_pairs)) {
+  row_idx <- high_cor_pairs[i, 1]
+  col_idx <- high_cor_pairs[i, 2]
+  correlation_value <- cor_matrix[row_idx, col_idx]
+  cat("Pair:", rownames(cor_matrix)[row_idx], "-", colnames(cor_matrix)[col_idx], ", Correlation:", correlation_value, "\n")
+}
+```
+```{r}
+cor_matrix = cor_trt
+# Find pairs with correlation values greater than 0.5
+high_cor_pairs <- which(abs(cor_matrix) > 0.80 & cor_matrix != 1, arr.ind = TRUE)
+
+# Print the pairs and their correlation values
+for (i in 1:nrow(high_cor_pairs)) {
+  row_idx <- high_cor_pairs[i, 1]
+  col_idx <- high_cor_pairs[i, 2]
+  correlation_value <- cor_matrix[row_idx, col_idx]
+  cat("Pair:", rownames(cor_matrix)[row_idx], "-", colnames(cor_matrix)[col_idx], ", Correlation:", correlation_value, "\n")
+}
+```
+

@@ -1,0 +1,236 @@
+---
+title: "Genomic Correlation"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r}
+# library(BGLR)
+library(tidyverse)
+library(ggplot2)
+```
+
+## Drawing plots for ggcor
+```{r}
+## Draw plots for h2 within treatments --
+# met_names0 <- read.delim("../Met/raw_data/met_names.txt", header=FALSE)[,1]
+# name = c(paste0("a",1:10),paste0("b",1:10),paste0("c",1:10),paste0("d",1:10),
+#          paste0("e",1:10),paste0("f",1:10),paste0("g",1:10),paste0("h",1:3))
+# # met_names0 = name
+# met_names = met_names0[-c(13,28,30,38,62,67)]
+```
+
+
+```{r}
+# load("~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/temp/ggcorr/Control_sommer-multi_genetic_corr.rda")
+# 
+# ggcor_control = genetic_corrL
+```
+
+```{r}
+# ggcor_control.df = as.data.frame(do.call(rbind, ggcor_control))
+# ggcor_control.df = data.frame(met1 = ggcor_control.df$met1, met2 = ggcor_control.df$met2, corr = as.numeric(ggcor_control.df$corr))
+# ggcor_control.df = ggcor_control.df[!is.infinite(ggcor_control.df$corr), ]
+# # ggcor_control.df = ggcor_control.df[ggcor_control.df$met1 %in% met_con_h2_large, ]
+# # ggcor_control.df = ggcor_control.df[ggcor_control.df$met2 %in% met_con_h2_large, ]
+# ggcor_control.df = na.omit(ggcor_control.df)
+# ggcor_control.df$met1 = factor(ggcor_control.df$met1, levels = name)
+# ggcor_control.df$met2 = factor(ggcor_control.df$met2, levels = name)
+# ggplot(ggcor_control.df, aes(x = met2, y = met1, fill=corr)) +
+#   # geom_raster()+
+#   geom_tile() +
+#   coord_fixed() +
+#   scale_fill_distiller(palette = 'PiYG', limits = c(-1.3,1.3)) +
+#   ggtitle("(A)") + 
+#   xlab("Metabolite")+
+#   ylab("Metabolite")+
+#   theme(plot.title = element_text(size=18, face = "bold", hjust = 0), 
+#         axis.title.x = element_text(size = 16),
+#         axis.title.y = element_text(size = 16),
+#         axis.text.x = element_text(size = 6, angle = 90,hjust=0.95,vjust=0.2), 
+#         axis.text.y = element_text(size = 6))
+
+```
+
+
+
+```{r}
+source("./functions.R")
+met_names = met_name_func("names")
+```
+
+
+```{r}
+load("../temp/log_lmer/bglrmulti_genetic_corr_perTreatment0.05.rda")
+# load("../temp/ggcorr_perTreatment/bglr-multi_genetic_corr_perTreatment_r2_0.5.rda")
+# load("../temp/log_lmer/bglrmulti_genetic_corr_perTreatment0.25_ori.rda")
+ggcorr = do.call(rbind, genetic_corrL)
+ggcorr.df = data.frame(met1 = met_names, met2 = met_names, corr = as.numeric(ggcorr[,3]))
+ggcorr.df$met1 = factor(ggcorr.df$met1, levels = met_names)
+ggcorr.df$met2 = factor(ggcorr.df$met2, levels = met_names)
+# plot(1:67, ggcorr.df$corr)
+```
+
+
+```{r}
+my_colors1 <- RColorBrewer::brewer.pal(11, 'RdYlBu')[10]
+# color_palette <- rep(my_colors,6)
+
+ggcor_bar = ggplot(data=ggcorr.df, aes(x=met1, y=corr, color=my_colors1)) + 
+  geom_segment(aes(x=met1,xend=met1,y=0, yend=corr), size = 4)+
+  labs(x="Metabolite", y = "Genomic correlation") +
+  theme_bw()+
+  scale_y_continuous(breaks = seq(-0.2,1,0.2))+
+  scale_x_discrete(position = "bottom") +
+  scale_color_manual(values=alpha(my_colors1, 0.8)) +
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8),legend.position="none")
+
+ggcor_bar
+# dev.print(pdf, file="../temp/barplot_ggcor_perTreatment0.05.pdf", height=6, width=10)
+```
+
+```{r}
+df = ggcorr.df
+library(plyr)
+muu = mean(df$corr)
+mediann = median(df$corr)
+
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,11)]
+
+summary(df$corr)
+
+ggcor_density = ggplot(df, aes(x=corr)) + 
+  geom_density(alpha=0.6, color = my_colors[1], fill = my_colors[1])+
+  geom_vline(aes(xintercept=muu), color=my_colors[2], linetype='solid', size = 0.8)+
+  geom_vline(aes(xintercept=mediann), color=my_colors[2], linetype='dashed', size = 0.8)+         
+  scale_x_continuous(limits=c(0, 1), breaks=seq(0,1,0.2)) +
+  labs(x="Genomic correlation", y = "Density") +
+  # scale_fill_manual(values = my_colors)+
+  # scale_color_manual(values = my_colors)+
+  theme_bw()
+
+ggcor_density
+# dev.print(pdf, file="../temp/ggcor_density_plot.pdf", height=6, width=10)
+
+```
+```{r}
+library(ggpubr)
+ggarrange(ggcor_bar, 
+          NULL,
+          ggcor_density, 
+          nrow = 3, 
+          heights = c(3,0.2,2),
+          labels = c("(A)","", "(B)"), vjust = c(1.5,0,0), 
+          # vjust=-0.1,
+          common.legend = F)
+dev.print(pdf, file="../temp/ggcor_per_Treatment_plots.pdf", height=8, width=10)
+```
+
+
+
+```{r}
+df_ggcorr = rbind.data.frame(ggcorr.df, ggcorr.df)
+colnames(df_ggcorr)[3] = "value"
+df_ggcorr$Treatment = rep(c("Control", "Stress"), each=66)
+# 
+# dfcon = FAdf_prep_func(df, 'Control', FmetL_con)
+# dftrt = FAdf_prep_func(df, "Stress", FmetL_trt)
+# 
+# dff = rbind.data.frame(dfcon, dftrt)
+# 
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(11,10,9,8,7,5,4,3,2,1)]
+# 
+# ggplot(dff, aes(x=corr, color=Factor, fill = Factor)) + 
+#   geom_density(alpha=0.6)+
+#   scale_x_continuous(limits=c(0, 1), breaks=seq(0,1,0.2)) +
+#     # scale_y_continuous(limits=c(0, 6), breaks=seq(0,6,1))+
+#   # scale_y_continuous(limits=c(0, 15), breaks=seq(0,15,3)) +
+#   labs(x="Genetic Correlation", y = "Density") +
+#   facet_grid(rows = vars(Treatment))+
+#   scale_fill_manual(values = my_colors)+
+#   scale_color_manual(values = my_colors)+
+#   theme_bw()
+# dev.print(pdf, file="../temp/FA_ggcor_density_plot.pdf", height=6, width=10)
+```
+
+##drawing FA density plot for ggcorr
+```{r}
+FA_ggcorr_den=FA_density_plot_generator(df=df_ggcorr,
+                          my_colors = RColorBrewer::brewer.pal(11, 'Spectral')[c(11,10,9,8,7,5,4,3,2,1)],
+                          limits_range = c(0, 1),
+                          breaks_range = seq(0,1,0.2),
+                          x_name = "Genetic correlation",
+                          ylim = NULL)
+FA_ggcorr_den
+```
+
+###showing h2, PreCorr-GBLUP, ggcorr FA density plots together.
+```{r}
+
+```
+
+
+
+
+
+############################################################
+############################################################
+############################################################
+```{r}
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)]
+# ggdp3 <- ggplot(ggcorr.df, aes(x=met1, y=corr)) + 
+#   geom_point(size=2, color=my_colors[1]) +
+#   # geom_text(hjust=0, vjust=0, size = 2)+
+#   labs(x="Metabolite", y = "Genetic Correlation") +
+#   scale_y_continuous(limits=c(0, 1), breaks=c(0,0.2,0.4,0.6,0.8, 1)) +
+#   # theme_classic()+
+#   theme_bw()+
+#   scale_color_manual(values = my_colors[1])+
+#   theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#         axis.text.y=element_text(size=8))
+# ggdp3
+# dev.print(pdf, file="../temp/ggcor_perTreatment0.05.pdf", height=6, width=10)
+
+```
+
+### BGLR multi-trait for lmer metabolites
+```{r}
+# bglr_multi_path = "../ARC_outputs/Met_loglmer/ggcor_bglr_r2_0.5/outputs/"
+
+# ggcor_plot_generator_func <- function(path, treatment){
+# 
+#   bglr_ggcor_controlL = list()
+#   bglr_ggcor_control_filenames = list.files(path=bglr_multi_path, pattern = '^Control.*\\.rda')
+#   
+#   for (i in 1:length(bglr_ggcor_control_filenames)){
+#     load(file=file.path(bglr_multi_path, bglr_ggcor_control_filenames[i])) ## corr_vec
+#     bglr_ggcor_controlL[[i]] = corr_vec
+#   }
+#   
+#   bglr_ggcor_control_df = do.call(rbind.data.frame, bglr_ggcor_controlL)
+#   colnames(bglr_ggcor_control_df) = c('met1', 'met2', 'corr')
+#   bglr_ggcor_control_df = data.frame(met1 = bglr_ggcor_control_df$met1, 
+#                                      met2 = bglr_ggcor_control_df$met2, 
+#                                      corr = as.numeric(bglr_ggcor_control_df$corr))
+#   
+#   bglr_ggcor_control_df$met1 = factor(bglr_ggcor_control_df$met1, levels = met_names)
+#   bglr_ggcor_control_df$met2 = factor(bglr_ggcor_control_df$met2, levels = met_names)
+#   
+#   pp = ggplot(bglr_ggcor_control_df, aes(x = met2, y = met1, fill=corr)) +
+#     # geom_raster()+
+#     geom_tile() +
+#     coord_fixed() +
+#     scale_fill_distiller(palette = 'PiYG', limits = c(-0.6,1)) +
+#     ggtitle("BGLR-control") + 
+#     xlab("Metabolite")+
+#     ylab("Metabolite")+
+#     theme(plot.title = element_text(size=18, face = "bold", hjust = 0), 
+#           axis.title.x = element_text(size = 16),
+#           axis.title.y = element_text(size = 16),
+#           axis.text.x = element_text(size = 6, angle = 90,hjust=0.95,vjust=0.2), 
+#           axis.text.y = element_text(size = 6))
+#   
+#   return(pp)
+# }
+```

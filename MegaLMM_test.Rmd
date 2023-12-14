@@ -1,0 +1,99 @@
+---
+title: "MultiEnvironmentTrial"
+output: 
+  html_notebook:
+    toc: yes
+    toc_float:
+      toc_collapsed: true
+    toc_depth: 3
+    number_sections: true
+vignette: >
+  %\VignetteIndexEntry{MultiEnvironmentTrial}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+```{r}
+library(ggplot2)
+```
+
+
+```{r}
+source("functions.R")
+met_names = met_name_func(mode = 'rrr')
+```
+
+
+###Convert PredCorr into list
+```{r, eval = F}
+# path = "../temp/mega/control"
+# namm = "mega_"
+# PredCorr_conL <- list()
+#   for (i in 1:100){
+#     PredCorr_conL[[i]] <- readRDS(file=file.path(path,paste0("Control_",namm,"cv_",i,".RDS")))
+#   }
+# corRL_con_fa5 = PredCorr_conL
+# save(corRL_con_fa5, file=file.path("../temp/mega/Control_MegaLMM.rda"))
+```
+
+```{r}
+load("../temp/mega/fa4/Control_MegaLMM.rda")
+corRL_con = corRL
+load("../temp/mega/Stress_MegaLMM.rda")
+corRL_trt = corRL
+
+PreCorr_mega_func <- function(corRL, treatment, met_names){
+  corR.wide = do.call(rbind, corRL)
+  colnames(corR.wide) = met_names
+  corR.wide = cbind.data.frame(CV = 1:100,
+                         corR.wide,
+                         Treatment = treatment)
+  corR.long = tidyr::gather(corR.wide, key="Met", value="Corr", -c(CV, Treatment))
+}
+
+PreCorr_mega_G=rbind(PreCorr_mega_func(corRL=corRL_con, treatment="Control", met_names=met_names),
+                   PreCorr_mega_func(corRL=corRL_trt, treatment="Stress", met_names=met_names))
+
+PreCorr_mega_G$Met <- factor(PreCorr_mega_G$Met, levels = met_names)
+PreCorr_mega_G$Kernel <- "Mega-G"
+```
+
+
+
+
+
+##################################################################################################################
+```{r}
+# PreCorr_mega$Kernel = "MegaLMM"
+# PreCorr_mega = PreCorr_mega[, colnames(PreCorr)]
+# PreCorr_mega$Met <- as.factor(PreCorr_mega$Met)
+# combb = rbind(PreCorr, PreCorr_mega)
+# combb$Met = as.factor(combb$Met)
+# combb$Treatment = as.factor(combb$Treatment)
+# combb$Kernel = as.factor(combb$Kernel)
+# 
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 2)]
+# dp10 <- ggplot(combb, aes(x=Met, y=Corr)) + 
+#            facet_grid(rows = vars(Treatment))+
+#            geom_boxplot(aes(fill=Kernel), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.2)+
+#            labs(x="Metabolite", y = "Predictive correlation") +
+#            theme_bw()+
+#            scale_y_continuous(limits=c(-0.6, 0.9), breaks=c(-0.6, -0.4, -0.2, 0, 0.2,0.4,0.6, 0.8, 1)) +
+#            scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+#            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#                  axis.text.y=element_text(size=8))+
+#            # geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+#            scale_color_manual(values = my_colors)
+# 
+# 
+# dp10
+# dev.print(pdf, file="../temp/boxplot_G_mega.pdf", height = 6, width = 10)
+```
+

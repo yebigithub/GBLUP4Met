@@ -1,0 +1,312 @@
+---
+title: "GK"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+#loading packages
+```{r, message=F}
+library(tidyverse)
+library(lme4)
+library(readxl)
+```
+
+```{r}
+source("./functions.R")
+```
+
+###Loading Mega-GK pred corr
+```{r}
+path = "../temp/mega/GK/GK_0.2"
+PreCorr0.2 = load_pred_corr_func(path=path, kernel = "GK_0.2", namm="mega_")
+
+path = "../temp/mega/GK/GK_0.4"
+PreCorr0.4 = load_pred_corr_func(path=path, kernel = "GK_0.4", namm="mega_")
+
+path = "../temp/mega/GK/GK_0.6"
+PreCorr0.6 = load_pred_corr_func(path=path, kernel = "GK_0.6", namm="mega_")
+
+path = "../temp/mega/GK/GK_0.8"
+PreCorr0.8 = load_pred_corr_func(path=path, kernel = "GK_0.8", namm="mega_")
+```
+
+```{r}
+# combb = rbind.data.frame(PreCorr,PreCorr_mega,PreCorr0.2,PreCorr0.4,PreCorr0.6,PreCorr0.8)
+# 
+# combb$Kernel = factor(combb$Kernel, levels=c("BGLR","Mega-G","GK_0.2","GK_0.4","GK_0.6","GK_0.8"))
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,9,8,4,3,2)]
+# dp10 <- ggplot(combb, aes(x=Met, y=Corr)) + 
+#            facet_grid(rows = vars(Treatment))+
+#            geom_boxplot(aes(fill=Kernel), outlier.size=0.2, outlier.alpha = 0.7, lwd=0.2)+
+#            labs(x="Metabolite", y = "Predictive correlation") +
+#            theme_bw()+
+#            scale_y_continuous(limits=c(-0.7, 0.9), breaks=c(-0.6, -0.4, -0.2, 0, 0.2,0.4,0.6, 0.8, 1)) +
+#            scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+#            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+#                  axis.text.y=element_text(size=8))+
+#            # geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+#            scale_color_manual(values = my_colors)
+# 
+# 
+# dp10
+# dev.print(pdf, file="../temp/boxplot_GBLUP_megaGK.pdf", height = 6, width = 10)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+#####
+##### Generate GK kernels.
+####
+#load SNPs
+```{r}
+## Read into met.rr dataset to get NSFTV_ID in treatments.
+met_rr_stress <- read.csv("../Met/met_rr_stress.csv")
+met_rr_control <- read.csv("../Met/met_rr_control.csv")
+id_control <- met_rr_control$NSFTV_ID
+id_stress <- met_rr_stress$NSFTV_ID
+
+load("../Geno/geno.rr.RData")
+geno <- geno_rr
+geno_control = geno[id_control, ]
+geno_stress = geno[id_stress, ] 
+Xcs_control = scale(geno_control, center = T, scale = T)
+Xcs_stress = scale(geno_stress, center = T, scale = T)
+XcsL = list(Control = Xcs_control,
+            Stress = Xcs_stress)
+# save(XcsL, file="../Geno/XcsL.RData")
+
+#GBLUP Gmatrix
+G_control = tcrossprod(Xcs_control)/ncol(Xcs_control)
+G_stress = tcrossprod(Xcs_stress)/ncol(Xcs_stress)
+```
+
+#Draw histogram
+```{r}
+hist_draw_func <- function(GK, mainn){
+  hist(GK[upper.tri(GK)], main=mainn)
+}
+```
+
+#Histogram for Gmatrix
+```{r}
+hist_draw_func(GK = G_control, mainn = 'G_control')
+hist_draw_func(GK = G_stress, mainn = 'G_stress')
+```
+
+#Build Hauclidean distance matrix 
+```{r}
+treatment = "Control"
+treatment = "Stress"
+Xcs <- XcsL[[treatment]]
+D<- as.matrix(dist(Xcs, method="euclidean"))^2
+Dmean <- D/mean(D)
+Dmean_control = Dmean
+Dmean_stress = Dmean
+```
+
+#Build Gaussian Kernel
+```{r}
+computeGK_func<- function(bw, Dmean){
+  GK <- exp(-bw * Dmean) 
+  return(GK)
+}
+```
+```{r}
+GK0.25_stress <- computeGK_func(bw=0.25, Dmean = Dmean_stress)
+GK0.25_control = GK0.25_stress
+# hist_draw_func(GK0.25_stress, "GK0.25_stress")
+mean(GK0.25_stress[upper.tri(GK0.25_stress)])
+
+GK1.5_stress <- computeGK_func(bw=1.5, Dmean = Dmean_stress)
+GK1.5_control = GK1.5_stress
+# hist_draw_func(GK1.5_stress, "GK1.5_stress")
+mean(GK1.5_stress[upper.tri(GK1.5_stress)])
+
+GKL = list(Control = list(GK0.25 = GK0.25_control,
+                          GK1.5 = GK1.5_control),
+           Stress = list(GK0.25 = GK0.25_stress,
+                          GK1.5 = GK1.5_stress))
+
+# save(GKL, file = "../Geno/GKL.RData")
+```
+
+
+
+# MegaLMM
+#Average Kernel and draw histogram.
+#Control
+```{r}
+GK <- computeGK_func(bw=1.76, Dmean = Dmean_stress)
+mean(GK[upper.tri(GK)])
+```
+```{r}
+GK <- computeGK_func(bw=0.22, Dmean = Dmean_stress)
+mean(GK[upper.tri(GK)])
+GK_0.8 = GK
+
+GK <- computeGK_func(bw=0.52, Dmean = Dmean_stress)
+mean(GK[upper.tri(GK)])
+GK_0.6 = GK
+
+GK <- computeGK_func(bw=0.96, Dmean = Dmean_stress)
+mean(GK[upper.tri(GK)])
+GK_0.4 = GK
+
+GK <- computeGK_func(bw=1.76, Dmean = Dmean_stress)
+mean(GK[upper.tri(GK)])
+GK_0.2 = GK
+```
+
+#Save for later.
+```{r}
+GKL = list(Control = list(GK_0.8 = GK_0.8,
+                          GK_0.6 = GK_0.6,
+                          GK_0.4 = GK_0.4,
+                          GK_0.2 = GK_0.2),
+           Stress = list(GK_0.8 = GK_0.8,
+                          GK_0.6 = GK_0.6,
+                          GK_0.4 = GK_0.4,
+                          GK_0.2 = GK_0.2)
+           )
+           
+
+save(GKL, file = "../Geno/GKL_mega.RData")
+```
+
+
+###########################################################################################################
+#############################################################################################################
+
+<!-- ## Drawing stacked-barplots for h2, varE, varG -->
+<!-- ```{r} -->
+<!-- ## Draw plots for h2 within treatments -- -->
+<!-- met_names <- read.delim("../Met/raw_data/met_names.txt", header=FALSE) -->
+
+<!-- load("../ARC_outputs/GK/outputs_H2_GK/Control_H2.rda") -->
+<!-- H2varcon <- as.data.frame(do.call(rbind, H2L)) -->
+
+<!-- load("../ARC_outputs/GK/outputs_H2_GK/Stress_H2.rda") -->
+<!-- H2vartrt <- as.data.frame(do.call(rbind, H2L)) -->
+
+<!-- H2 = c(H2varcon$H2, H2vartrt$H2) -->
+<!-- varE = c(H2varcon$varE, H2vartrt$varE) -->
+<!-- varG1.5 = c(H2varcon$varG1.5, H2vartrt$varG1.5) -->
+<!-- varG0.25 = c(H2varcon$varG0.25, H2vartrt$varG0.25) -->
+
+<!-- df1 = data.frame(Met=met_names$V1,  -->
+<!--                 H2=H2,  -->
+<!--                 varE = varE,  -->
+<!--                 varG = varG1.5+varG0.25, -->
+<!--                 Treatment = rep(c("Control", "Stress"), each=73)) -->
+
+<!-- df1.long <- reshape2::melt(df1,  -->
+<!--                           id.vars = c('Met', 'Treatment')) -->
+<!-- ``` -->
+
+<!-- ## h2 scatter plot. -->
+<!-- ```{r} -->
+<!-- H2.df.long <- df1.long %>% filter(variable == 'H2') %>% droplevels() -->
+<!-- colnames(H2.df.long) <- c("Met", "Treatment", "variable", "h2") -->
+<!-- H2.df.long$Treatment <- as.factor(H2.df.long$Treatment) -->
+<!-- H2.df.long$Met <- factor(H2.df.long$Met, levels=unique(H2.df.long$Met)) -->
+<!-- H2.df.long$Kernel <- "GK-BGLR" -->
+
+<!-- my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 2)] -->
+<!-- dp2 <- ggplot(H2.df.long, aes(x=Met, y=h2)) +  -->
+<!--   geom_point(aes(colour=Treatment)) + -->
+<!--   facet_grid(rows = vars(Treatment))+  -->
+<!--   labs(x="Metabolite", y = "Heritability") + -->
+<!--   scale_y_continuous(limits=c(0.15, 1), breaks=c(0.2,0.4,0.6,0.8, 1)) + -->
+<!--   # theme_classic()+ -->
+<!--   theme_bw()+ -->
+<!--   scale_color_manual(values = alpha(my_colors, 0.7))+ -->
+<!--   theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2), -->
+<!--         axis.text.y=element_text(size=8)) -->
+<!-- dp2 -->
+<!-- # dev.print(pdf, file="../outputs/GK/H2_GK.pdf", height=6, width=10) -->
+<!-- ``` -->
+
+<!-- ## stacked barplot for varE varG  -->
+<!-- ```{r} -->
+<!-- var.df.long1 <- df1.long %>% filter(variable != 'H2') %>% droplevels() -->
+<!-- colnames(var.df.long1) = c("Met", "Treatment", "Var", "value") -->
+<!-- var.df.long1$Treatment <- as.factor(var.df.long1$Treatment) -->
+<!-- var.df.long1$Met <- factor(var.df.long1$Met, levels=unique(var.df.long1$Met)) -->
+<!-- var.df.long1$Var <- factor(var.df.long1$Var, levels=c("varE", "varG")) -->
+<!-- var.df.long1$Kernel <- "GK" -->
+
+<!-- my_colors <- RColorBrewer::brewer.pal(9, 'Pastel1')[c(1, 3)] -->
+<!-- ggplot(var.df.long1, aes(x = Met, y = value, fill=Var)) + -->
+<!--   geom_col(position = "fill")+ -->
+<!--   facet_grid(rows = vars(Treatment))+ -->
+<!--   theme_classic()+ -->
+<!--   labs(x="Metabolite", y = "Variance component") + -->
+<!--   scale_fill_manual(values = my_colors)+ -->
+<!--   theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2), -->
+<!--         axis.text.y=element_text(size=8)) -->
+<!-- dev.print(pdf, file="../outputs/GK/var_GK.pdf", height=6, width=10) -->
+<!-- ``` -->
+
+<!-- # ############################################################################################################# -->
+<!-- ## Calculate predictive cor in cluster -->
+<!-- - R file: GK.R -->
+<!-- - Bash file: GK.sh -->
+
+<!-- # ############################################################################################################# -->
+
+<!-- ## Draw boxplot for GBLUP -->
+<!-- ```{r} -->
+<!-- path.bglr = "../ARC_outputs/GK/outputs_GK/" -->
+<!-- bglr_conL <- list() -->
+<!-- bglr_trtL <- list() -->
+<!-- for (i in 1:100){ -->
+<!--   bglr_conL[[i]] <- readRDS(file=file.path(path.bglr,paste0("Control_cv_",i,".RDS"))) -->
+<!--   bglr_trtL[[i]] <- readRDS(file=file.path(path.bglr,paste0("Stress_cv_",i,".RDS"))) -->
+<!-- } -->
+
+<!-- met_names <- read.delim("../Met/raw_data/met_names.txt", header=FALSE) -->
+
+<!-- bglr.c.df <- do.call(rbind, bglr_conL); colnames(bglr.c.df)= met_names$V1 -->
+<!-- bglr.t.df <- do.call(rbind, bglr_trtL); colnames(bglr.t.df) = met_names$V1 -->
+
+<!-- # boxplot(bglr.c.df, main="BGLR GBLUP control") -->
+<!-- #  -->
+<!-- # boxplot(bglr.t.df, main="BGLR GBLUP stress") -->
+
+<!-- temp1 <- reshape2::melt(bglr.c.df) -->
+<!-- temp2 <- reshape2::melt(bglr.t.df) -->
+<!-- temp3 <- rbind.data.frame(temp1,temp2) -->
+<!-- temp3$group <- rep(c("Control", "HNT"), each = 7300) -->
+<!-- colnames(temp3) <- c("CV", "Met", "Corr", "Treatment") -->
+<!-- temp3$Kernel = "GK" -->
+<!-- temp3_GK = temp3 -->
+
+<!-- my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 2)] -->
+<!-- dp1 <- ggplot(temp3_GK, aes(x=Met, y=Corr)) +  -->
+<!--            facet_grid(rows = vars(Treatment))+ -->
+<!--            geom_boxplot(aes(fill=Treatment), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.3)+ -->
+<!--            labs(x="Metabolite", y = "Predictive correlation") + -->
+<!--            theme_bw()+ -->
+<!--            scale_y_continuous(limits=c(-0.6, 0.9), breaks=c(-0.6, -0.4, -0.2, 0, 0.2,0.4,0.6, 0.8, 1)) + -->
+<!--            scale_fill_manual(values = alpha(my_colors, 0.7))+ -->
+<!--            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2), -->
+<!--                  axis.text.y=element_text(size=8)) -->
+
+
+<!-- dp1 -->
+<!-- # dev.print(pdf, file="../outputs/GK/boxplot_bglr_GK.pdf", height = 6, width = 10) -->
+<!-- ``` -->

@@ -1,0 +1,187 @@
+---
+title: "FA"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r}
+#test commit and push
+library(blavaan)
+# install.packages("pheatmap")
+library(pheatmap)
+# install.packages("psych")
+library(psych)
+# install.packages("dplyr")
+library(dplyr)
+# install.packages("tidyr")
+library(tidyr)
+# install.packages("knitr")
+library(knitr)
+```
+
+```{r}
+input_load = function(treatment){
+  
+  met_rr = read.csv(paste0("../Met/met_rr_", treatment, ".csv"))
+  return(met_rr)
+  
+}
+met_rr_Control = input_load("Control")
+met_rr_Stress = input_load("Stress")
+
+
+# met_rr_Control1 = input_load("lmer", "Control")
+# met_rr_Stress1 = input_load("lmer", "Stress")
+```
+
+```{r}
+source("functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+
+```{r}
+heatmap4FA_func <- function(input, treatment, met_names,fff, threshold, log, FAnames, maintitle){
+  
+y = input[,-c(1:2)]
+colnames(y) = met_names
+
+
+# phenotypic correlation among traits 
+COR <- cor(y, use = "complete.obs")
+
+# parallel analysis to identify the number of underlying factors
+# fa.parallel(COR, n.obs = 123, fa = "fa", n.iter = 100, error.bars = FALSE,
+#             se.bars = FALSE, ylabel = 'Eigen values of factors', fm = 'mle')
+
+
+# fit a maximum likelihood-based EFA model by assuming fff factors
+fit.mle <- fa(COR, nfactors = fff, fm = "ml", max.iter = 1000,
+              rotate = "varimax")
+
+# extract factor loading coefficients
+loading <- round(fit.mle$loadings, digits = 10)
+colnames(loading) = FAnames
+
+
+loading_new = loading[1:66, 1:ncol(loading)]
+maxposition = apply(loading_new, 1, function(x){which.max(abs(x))})
+loading_prep = matrix('', 66, ncol(loading))
+colnames(loading_prep) = colnames(loading_new)
+rownames(loading_prep) = rownames(loading_new)
+for(i in 1:66){
+  pp = maxposition[i]
+  if(abs(loading_new[i,pp]) >= threshold){
+  loading_prep[i, pp] = round(loading_new[i, pp], 2)}
+}
+
+nn = loading_prep
+nn0 = round(loading, 2)
+# display the factor loadings using a heatmap
+# pp0 = pheatmap(loading,
+#                display_numbers = nn0,
+#                cluster_cols = FALSE,
+#                cluster_rows = TRUE,
+#                cutree_cols = fff,
+#                angle_col = 0,
+#                treeheight_row=0,
+#                treeheight_col = 0,
+#                legend = FALSE,
+#                main = '(A)',
+#                fontsize_number = 10,
+#                border_color = FALSE)
+# print(pp0)
+
+
+pp = pheatmap(loading,
+              display_numbers = nn,
+              cluster_cols = FALSE,
+              cluster_rows = T,
+              cutree_cols = fff,
+              angle_col = 0,
+              main = maintitle,
+              treeheight_row=0,
+              treeheight_col = 0,
+              fontsize_number = 10,
+              border_color = FALSE)
+print(pp)
+
+# gg = ggpubr::ggarrange(pp0[[4]], pp[[4]], ncol = 2, nrow = 1)
+# print(gg)
+dev.print(pdf, file=paste0("../temp/", log, "heatmap4FA_", treatment, ".pdf"), height=10, width=10)
+
+return(list(nn=nn, pp = pp[[4]]))
+}
+```
+
+```{r}
+FA_conL = heatmap4FA_func(input = met_rr_Control,
+                         treatment = 'control',
+                         met_names = met_names,
+                         fff=5,
+                         threshold = 0.4, 
+                         log="",
+                         FAnames = paste0("F",1:5),
+                         maintitle = "(A)")
+
+# FA_con1 = heatmap4FA_func(input = met_rr_Control1,
+#                          treatment = 'control',
+#                          met_names = met_names,
+#                          fff=4,
+#                          threshold = 0.4, 
+#                          log="nolog_",
+#                          FAnames = paste0("F",1:4))
+```
+
+```{r}
+FA_trtL = heatmap4FA_func(input = met_rr_Stress,
+                         treatment = 'stress',
+                         fff= 5,
+                         met_names = met_names,
+                         threshold = 0.4,
+                         log='',
+                         FAnames = paste0("F",6:10),
+                         maintitle = "(B)")
+
+# FA_trt1 = heatmap4FA_func(input = met_rr_Stress1,
+#                          treatment = 'stress',
+#                          fff= 5,
+#                          met_names = met_names,
+#                          threshold = 0.4,
+#                          log='nolog_',
+#                          FAnames = paste0("F",5:9))
+```
+```{r}
+library('grid')
+library("gridExtra")
+grid.arrange(grobs = list(FA_conL[[2]], 
+                          FA_trtL[[2]]), 
+             layout_matrix = matrix(c(1,2),1,2))
+dev.print(pdf, file=paste0("../temp/heatmap4FA_combined.pdf"), height=8, width=16)
+```
+
+
+```{r}
+FA_split_func <- function(FA){
+FF = matrix(NA, 66, ncol(FA))
+# rownames(FF) = rownames(FA)
+rownames(FF) = met_names
+colnames(FF) = colnames(FA)
+for (i in 1:ncol(FA)){
+  FF[,i] = nzchar(FA[,i])
+}
+FF = as.data.frame(FF)
+return(FF)
+}
+
+FmetL_con = FA_split_func(FA=FA_conL[[1]])
+FmetL_trt = FA_split_func(FA=FA_trtL[[1]])
+saveRDS(FmetL_con, "../Met/FmetL_con.RDS")
+saveRDS(FmetL_trt, "../Met/FmetL_trt.RDS")
+
+# FmetL_con1 = FA_split_func(FA=FA_con1L[[1]])
+# FmetL_trt1 = FA_split_func(FA=FA_trt1L[[1]])
+```
+
+
+
