@@ -1,0 +1,174 @@
+---
+title: "GBLUP_h2_chr"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+# library(BGLR)
+library(tidyverse)
+library(ggplot2)
+```
+
+
+# h2 per chr
+### Creat Gmatrix from diff chrs.
+```{r, eval=FALSE}
+met_rr_control <- read.csv("../../Met/met_rr_control.csv")
+met_rr_stress <- read.csv("../../Met/met_rr_stress.csv")
+id_control <- met_rr_control$NSFTV_ID
+id_stress <- met_rr_stress$NSFTV_ID
+id_comb <- union(id_control, id_stress)
+
+
+## Convert Geno into G matrix.
+load("../../Geno/geno.rr.RData") #geno_rr
+load('../../Geno/map.rr.RData') #map_rr
+geno <- geno_rr
+map <- map_rr
+
+geno_control = geno[id_control, ] 
+geno_stress = geno[id_stress, ] 
+
+genoL = list(Control = geno_control,
+             Stress = geno_stress)
+
+# GchrLL <- vector('list', 2); names(GchrLL) = c("Control", "Stress")
+GchrLL = list()
+
+for (j in c('Control')){
+  
+  GchrL <- list()
+  for (i in 1:12){
+      geno = genoL[[j]]    
+      SNP_chr = map[which(map$Chromosome == i), 'SNPName']
+      SNP_chr_others = map[which(map$Chromosome != i), 'SNPName']
+      cat('number of SNP in Chromosome', i, 'is', length(SNP_chr), '\n')
+      geno_chr = geno[ , SNP_chr]
+      geno_chr_others = geno[, SNP_chr_others]
+      print(dim(geno_chr))
+      # print(dim(geno_chr)[2] + dim(geno_chr_others)[2])
+      Xcs_chr = scale(geno_chr, center = T, scale = T)
+      Xcs_chr_others = scale(geno_chr_others, center = T, scale = T)
+      G_chr = tcrossprod(Xcs_chr)/ncol(Xcs_chr)
+      G_chr_others = tcrossprod(Xcs_chr_others)/ncol(Xcs_chr_others)
+      GchrL[[i]] = list(G_chr = G_chr,
+                        G_chr_others = G_chr_others)
+  }
+  GchrLL[[j]] <- GchrL
+  
+}
+
+
+G_chrLL = GchrLL
+save(G_chrLL, file = "../Geno/G_chrLL.RData")
+```
+
+# Calculate h2 per chr in cluster
+- R file: GBLUP_h2_chr.R
+- Bash file: GBLUP_h2_chr.sh 
+
+
+## Drawing plots for h2, varE, varG
+```{r}
+met_names0 <- read.delim("../Met/raw_data/met_names.txt", header=FALSE)[,1]
+# name = c(paste0("a",1:10),paste0("b",1:10),paste0("c",1:10),paste0("d",1:10),
+#          paste0("e",1:10),paste0("f",1:10),paste0("g",1:10),paste0("h",1:3))
+# met_names0 = name
+met_names = met_names0[-c(13,28,30,38,62,67)]
+
+reshape_func <- function(h2LL, treatment){
+  df2L <- list()
+  for (i in 1:12){
+    h2L = h2LL[[i]]
+    h2var = as.data.frame(do.call(rbind, h2L))
+    df2sub = data.frame(Met = met_names,
+                    Treatment = treatment,
+                    Chr = i,
+                    h2var)
+    df2L[[i]] = df2sub
+  }
+  df2 = do.call(rbind, df2L)
+  return(df2)
+}
+
+load("../temp/perChr/BGLR/Control_h2_chr_R2_0.05.rda")
+df2.con = reshape_func(h2LL, "Control")
+
+load("../temp/perChr/BGLR/Stress_h2_chr_R2_0.05.rda")
+df2.trt = reshape_func(h2LL, "Stress")
+
+df2.comb = rbind.data.frame(df2.con, df2.trt)
+df2.long <- reshape2::melt(df2.comb, 
+                          id.vars = c('Met', 'Treatment', 'Chr'))
+```
+
+## h2 scatter plot.
+```{r, eval = F}
+h2.df2.long <- df2.long %>% filter(variable == 'h2') %>% droplevels()
+colnames(h2.df2.long) <- c("Met", "Treatment", "Chr" ,"variable", "h2")
+h2.df2.long$Treatment <- as.factor(h2.df2.long$Treatment)
+h2.df2.long$Chr <- as.factor(h2.df2.long$Chr)
+h2.df2.long$Met <- factor(h2.df2.long$Met, levels=unique(h2.df2.long$Met))
+
+# my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 2)]
+dp2 <- ggplot(h2.df2.long, aes(x=Met, y=h2)) +
+  facet_grid(rows = vars(Treatment))+
+  geom_point(aes(colour=Chr)) +
+  geom_point(data = H2h2.df.long, aes(shape = Kernel), col = c('gray32'))+
+  labs(x="Metabolite", y = "Heritability") +
+  scale_y_continuous(limits=c(0.10, 1), breaks=c(0.2,0.4,0.6, 0.8, 1)) +
+  # theme_classic()+
+  theme_bw()+
+  # scale_color_manual(values = alpha(my_colors, 0.7))+
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8))
+dp2
+# dev.print(pdf, file="../outputs/GBLUP_chr/h2_chr.pdf", height=8, width=10)
+```
+
+## stacked barplot for varE varG varO
+```{r}
+var.df2.long0 <- df2.long %>% filter(variable != 'h2' & Treatment == "Control") %>% droplevels()
+# var.df2.long = var.df2.long0
+var.df2.long <- var.df2.long0%>%filter(value >= 0) %>% droplevels()
+colnames(var.df2.long) = c("Met", "Treatment", "Chr", "Var", "value")
+var.df2.long$Treatment <- as.factor(var.df2.long$Treatment)
+var.df2.long$Met <- factor(var.df2.long$Met, levels=unique(var.df2.long$Met))
+var.df2.long$Var <- factor(var.df2.long$Var, levels=c("varE", "varO", "varG"))
+var.df2.long$Chr <- as.factor(var.df2.long$Chr)
+
+ggplot(var.df2.long, aes(x = Met, y = value, fill=Var)) +
+  geom_col(position = "fill")+
+  facet_grid(rows = vars(Chr))+
+  theme_classic()+
+  labs(x="Metabolite", y = "Variance component") +
+  scale_x_discrete(labels=met_names)+
+  scale_fill_brewer(palette="Pastel1") +
+  # scale_fill_manual(values = my_colors)+
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8))
+dev.print(pdf, file="../temp/bglr_var_chr_control0.05.pdf", height=12, width=10)
+```
+
+```{r}
+var.df2.long0 <- df2.long %>% filter(variable != 'h2' & Treatment == "Stress") %>% droplevels()
+var.df2.long <- var.df2.long0%>%filter(value >= 0) %>% droplevels()
+colnames(var.df2.long) = c("Met", "Treatment", "Chr", "Var", "value")
+var.df2.long$Treatment <- as.factor(var.df2.long$Treatment)
+var.df2.long$Met <- factor(var.df2.long$Met, levels=unique(var.df2.long$Met))
+var.df2.long$Var <- factor(var.df2.long$Var, levels=c("varE", "varO", "varG"))
+var.df2.long$Chr <- as.factor(var.df2.long$Chr)
+
+ggplot(var.df2.long, aes(x = Met, y = value, fill=Var)) +
+  geom_col(position = "fill")+
+  facet_grid(rows = vars(Chr))+
+  theme_classic()+
+  scale_x_discrete(labels=met_names)+
+  labs(x="Metabolite", y = "Variance component") +
+  scale_fill_brewer(palette="Pastel1") + 
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8))
+dev.print(pdf, file="../temp/bglr_var_chr_stress0.05.pdf", height=12, width=10)
+```
