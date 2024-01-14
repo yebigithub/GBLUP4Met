@@ -1,0 +1,10 @@
+for cv in $(seq 1 10 91)
+do
+    for modell in VGG16 ResNet50 EfficientNetB7
+    do 
+            jobname="${modell}_${cv}"
+            batchfilename="batch_${jobname}"
+            bash Generate_Sbatch.sh $jobname $cv $modell "10:00:00" > $batchfilename      
+            #sbatch $batchfilename
+    done
+done 

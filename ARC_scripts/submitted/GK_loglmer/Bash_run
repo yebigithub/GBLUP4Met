@@ -1,0 +1,14 @@
+for ia in $(seq 1 20 81)
+do
+    # for R2 in 0.05 0.1 0.3
+    # do 
+        for treatment in "Control" "Stress"
+        do 
+            ib=$(( $ia + 19 ))    
+            jobname="${treatment:0:1}_${ia}"
+            batchfilename="batch_${jobname}"
+            bash Generate_Sbatch.sh $jobname $ia $ib $treatment "04:00:00" > $batchfilename      
+            #sbatch $batchfilename
+        done
+    # done
+done 

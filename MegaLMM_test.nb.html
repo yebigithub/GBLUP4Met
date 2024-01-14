@@ -2950,32 +2950,25 @@ PreCorr_mega_G$Kernel &lt;- &quot;Mega-G&quot;</code></pre>
 <!-- rnb-text-end -->
 <!-- rnb-chunk-begin -->
 <!-- rnb-source-begin eyJkYXRhIjoiYGBgclxuYGBgclxuIyBQcmVDb3JyX21lZ2EkS2VybmVsID0gXFxNZWdhTE1NXFxcbiMgUHJlQ29ycl9tZWdhID0gUHJlQ29ycl9tZWdhWywgY29sbmFtZXMoUHJlQ29ycildXG4jIFByZUNvcnJfbWVnYSRNZXQgPC0gYXMuZmFjdG9yKFByZUNvcnJfbWVnYSRNZXQpXG4jIGNvbWJiID0gcmJpbmQoUHJlQ29yciwgUHJlQ29ycl9tZWdhKVxuIyBjb21iYiRNZXQgPSBhcy5mYWN0b3IoY29tYmIkTWV0KVxuIyBjb21iYiRUcmVhdG1lbnQgPSBhcy5mYWN0b3IoY29tYmIkVHJlYXRtZW50KVxuIyBjb21iYiRLZXJuZWwgPSBhcy5mYWN0b3IoY29tYmIkS2VybmVsKVxuIyBcbiMgbXlfY29sb3JzIDwtIFJDb2xvckJyZXdlcjo6YnJld2VyLnBhbCgxMSwgJ1NwZWN0cmFsJylbYygxMCwgMildXG4jIGRwMTAgPC0gZ2dwbG90KGNvbWJiLCBhZXMoeD1NZXQsIHk9Q29ycikpICsgXG4jICAgICAgICAgICAgZmFjZXRfZ3JpZChyb3dzID0gdmFycyhUcmVhdG1lbnQpKStcbiMgICAgICAgICAgICBnZW9tX2JveHBsb3QoYWVzKGZpbGw9S2VybmVsKSwgb3V0bGllci5zaXplPTAuNSwgb3V0bGllci5hbHBoYSA9IDAuNywgbHdkPTAuMikrXG4jICAgICAgICAgICAgbGFicyh4PVxcTWV0YWJvbGl0ZVxcLCB5ID0gXFxQcmVkaWN0aXZlIGNvcnJlbGF0aW9uXFwpICtcbiMgICAgICAgICAgICB0aGVtZV9idygpK1xuIyAgICAgICAgICAgIHNjYWxlX3lfY29udGludW91cyhsaW1pdHM9YygtMC42LCAwLjkpLCBicmVha3M9YygtMC42LCAtMC40LCAtMC4yLCAwLCAwLjIsMC40LDAuNiwgMC44LCAxKSkgK1xuIyAgICAgICAgICAgIHNjYWxlX2ZpbGxfbWFudWFsKHZhbHVlcyA9IGdncGxvdDI6OmFscGhhKG15X2NvbG9ycywgMC43KSkrXG4jICAgICAgICAgICAgdGhlbWUoYXhpcy50ZXh0Lng9ZWxlbWVudF90ZXh0KHNpemU9OCwgYW5nbGU9OTAsIGhqdXN0PTAuOTUsIHZqdXN0PTAuMiksXG4jICAgICAgICAgICAgICAgICAgYXhpcy50ZXh0Lnk9ZWxlbWVudF90ZXh0KHNpemU9OCkpK1xuIyAgICAgICAgICAgICMgZ2VvbV9obGluZShkYXRhPW11LCBhZXMoeWludGVyY2VwdD1jb3JyLm1lYW4sIGNvbG9yPVRyZWF0bWVudCksIGxpbmV0eXBlPSdzb2xpZCcsIGxpbmV3aWR0aCA9IDEpK1xuIyAgICAgICAgICAgIHNjYWxlX2NvbG9yX21hbnVhbCh2YWx1ZXMgPSBteV9jb2xvcnMpXG4jIFxuIyBcbiMgZHAxMFxuIyBkZXYucHJpbnQocGRmLCBmaWxlPVxcLi4vdGVtcC9ib3hwbG90X0dfbWVnYS5wZGZcXCwgaGVpZ2h0ID0gNiwgd2lkdGggPSAxMClcbmBgYFxuYGBgIn0= -->
-<pre class="r"><code>```r
-# PreCorr_mega$Kernel = \MegaLMM\
-# PreCorr_mega = PreCorr_mega[, colnames(PreCorr)]
-# PreCorr_mega$Met &lt;- as.factor(PreCorr_mega$Met)
-# combb = rbind(PreCorr, PreCorr_mega)
-# combb$Met = as.factor(combb$Met)
-# combb$Treatment = as.factor(combb$Treatment)
-# combb$Kernel = as.factor(combb$Kernel)
-# 
-# my_colors &lt;- RColorBrewer::brewer.pal(11, &#39;Spectral&#39;)[c(10, 2)]
-# dp10 &lt;- ggplot(combb, aes(x=Met, y=Corr)) + 
-#            facet_grid(rows = vars(Treatment))+
-#            geom_boxplot(aes(fill=Kernel), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.2)+
-#            labs(x=\Metabolite\, y = \Predictive correlation\) +
-#            theme_bw()+
-#            scale_y_continuous(limits=c(-0.6, 0.9), breaks=c(-0.6, -0.4, -0.2, 0, 0.2,0.4,0.6, 0.8, 1)) +
-#            scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
-#            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
-#                  axis.text.y=element_text(size=8))+
-#            # geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype=&#39;solid&#39;, linewidth = 1)+
-#            scale_color_manual(values = my_colors)
-# 
-# 
-# dp10
-# dev.print(pdf, file=\../temp/boxplot_G_mega.pdf\, height = 6, width = 10)</code></pre>
-<p>```</p>
+<p><code>r</code>r # PreCorr_mega<span class="math inline">\(Kernel =
+\MegaLMM\
+# PreCorr_mega = PreCorr_mega[, colnames(PreCorr)] #
+PreCorr_mega\)</span>Met &lt;- as.factor(PreCorr_mega<span class="math inline">\(Met) # combb = rbind(PreCorr, PreCorr_mega) #
+combb\)</span>Met = as.factor(combb<span class="math inline">\(Met) #
+combb\)</span>Treatment = as.factor(combb<span class="math inline">\(Treatment) # combb\)</span>Kernel =
+as.factor(combb$Kernel) # # my_colors &lt;- RColorBrewer::brewer.pal(11,
+‘Spectral’)[c(10, 2)] # dp10 &lt;- ggplot(combb, aes(x=Met, y=Corr)) + #
+facet_grid(rows = vars(Treatment))+ # geom_boxplot(aes(fill=Kernel),
+outlier.size=0.5, outlier.alpha = 0.7, lwd=0.2)+ # labs(x=, y =
+correlation) + # theme_bw()+ # scale_y_continuous(limits=c(-0.6, 0.9),
+breaks=c(-0.6, -0.4, -0.2, 0, 0.2,0.4,0.6, 0.8, 1)) + #
+scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+ #
+theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+# axis.text.y=element_text(size=8))+ # # geom_hline(data=mu,
+aes(yintercept=corr.mean, color=Treatment), linetype=‘solid’, linewidth
+= 1)+ # scale_color_manual(values = my_colors) # # # dp10 #
+dev.print(pdf, file=../temp/boxplot_G_mega.pdf, height = 6, width =
+10)</p>
 <!-- rnb-source-end -->
 <!-- rnb-chunk-end -->
 <!-- rnb-text-begin -->
