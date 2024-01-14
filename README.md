@@ -1,1 +1,11 @@
-# GBLUP4Met
+# Role of genomics on regulating rice grain metabolic variability under warmer nights: A statistical and image-based deep learning approach
+
+Preprint: link
+
+## 0. Data Preprocessing
+## 1. Genomic heritability of metabolites
+## 2. Single-trait genomic prediction of metabolites
+## 3. Genomic correlation between the same metabolite in different treatments
+## 4. Exporatory factor analysis
+## 5. Simultaneous regression modeling of metabolites
+## 6. Deep learning models
