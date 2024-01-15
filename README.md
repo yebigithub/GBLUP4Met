@@ -9,6 +9,8 @@ Preprint: link
 - [.Rmd file](https://github.com/yebigithub/GBLUP4Met/blob/main/PreProcessing/DataPreprocessing.Rmd)
 - Including metabolite and genotype data cleaning
 ## 1. Genomic heritability of metabolites
+- [.R file](https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/h2_calculate.R)
+- Using sommer package to calculate heritability for metabolites.
 ## 2. Single-trait genomic prediction of metabolites
 ## 3. Genomic correlation between the same metabolite in different treatments
 ## 4. Exporatory factor analysis
