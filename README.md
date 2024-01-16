@@ -12,7 +12,7 @@ Preprint: link
 - [.Rmd file](https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/h2_plot_drawing.Rmd) Drawing heritability plot
 
 <p align="center">
-<img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.pdf' width='70%' height='70%'>
+<img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.png' width='70%' height='70%'>
 </p>
 
 ## 2. Single-trait genomic prediction of metabolites
