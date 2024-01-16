@@ -11,6 +11,10 @@ Preprint: link
 - [.R file](https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/h2_calculate.R) Using sommer package to calculate heritability for metabolites.
 - [.Rmd file](https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/h2_plot_drawing.Rmd) Drawing heritability plot
 
+<p align="center">
+<img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.png' width='70%' height='70%'>
+</p>
+
 ## 2. Single-trait genomic prediction of metabolites
 ## 3. Genomic correlation between the same metabolite in different treatments
 ## 4. Exporatory factor analysis
