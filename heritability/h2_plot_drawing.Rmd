@@ -1,0 +1,127 @@
+---
+title: "heritability figure drawing"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+source("../../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+
+```{r}
+load_h2 = function(prepro, gblup){
+  load(paste0("../../../temp/", prepro,"/", gblup, "/Control_",gblup,"_h2.rda" ))
+  h2varcon <- as.data.frame(do.call(rbind, h2L))
+  # h2varcon = h2varcon[-30,] #remove d3 from met. 
+  load(paste0("../../../temp/", prepro,"/", gblup, "/Stress_",gblup,"_h2.rda" ))
+  h2vartrt <- as.data.frame(do.call(rbind, h2L))
+  # h2vartrt = h2vartrt[-30,]
+  h2 = c(h2varcon$h2, h2vartrt$h2)
+  varE = c(h2varcon$varE, h2vartrt$varE)
+  varG = c(h2varcon$varG, h2vartrt$varG)
+  df = data.frame(Met=met_names, 
+                  h2=h2, 
+                  varE = varE, 
+                  varG = varG, 
+                  Treatment = rep(c("Control", "Stress"), each=66))
+  
+  df.long <- reshape2::melt(df, id.vars = c('Met', 'Treatment'))
+  
+  
+  h2.df.long <- df.long %>% filter(variable == 'h2') %>% droplevels()
+  colnames(h2.df.long) <- c("Met", "Treatment", "variable", "value")
+  h2.df.long$Treatment <- as.factor(h2.df.long$Treatment)
+  h2.df.long$Met <- factor(h2.df.long$Met, levels=unique(h2.df.long$Met))
+  h2.df.long$Kernel <- paste0(prepro, "-G-", gblup)
+  return(h2.df.long)
+}
+
+h22L = list()
+m= 1
+for(i in c("log_lmer")){
+  for(j in c("sommer")){
+        h22L[[m]] = load_h2(i, j)
+        m = m+1
+  }
+        }
+```
+
+
+###heritability plot
+```{r}
+H2h2.df.long <- rbind.data.frame(h22L[[1]])
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)]
+h2_scatter <- ggplot(H2h2.df.long, aes(x=Met, y=value)) + 
+  geom_point(aes(colour=Treatment), size=2) +
+  # geom_text(hjust=0, vjust=0, size = 2)+
+  facet_grid(rows = vars(Treatment))+
+  labs(x="Metabolite accumulation", y = "Heritability") +
+  scale_y_continuous(limits=c(0, 1), breaks=c(0,0.2,0.4,0.6,0.8, 1)) +
+  # theme_classic()+
+  theme_bw()+
+  scale_color_manual(values = my_colors)+
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8),
+        axis.title.y = element_text(margin = margin(r=6)))
+h2_scatter
+# dev.print(pdf, file="../temp/h2_scatter_plot.pdf", height=6, width=10)
+```
+
+
+
+```{r}
+comp_h2 = compare_plot_generator(df = H2h2.df.long, 
+                       up_thr = 0.02, 
+                       low_thr = 0.2,
+                       limits_range = c(0,0.8),
+                       breaks_range = seq(0,0.8,0.1))
+comp_h2
+# dev.print(pdf, file="../temp/h2_compare.pdf", height=8, width=8)
+```
+
+
+## h2 density plot
+```{r}
+df = h22L[[1]]
+h2_density = density_plot_generator(df = df,
+                      my_colors=RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)],
+                      limits_range = c(0,1),
+                      breaks_range = seq(0,1,0.2),
+                      x_name = "Heritability",
+                      ylim = NULL,
+                      lines = T)
+h2_density
+# dev.print(pdf, file=paste0("../temp/h2_density.pdf"), height=4, width=8)
+```
+
+```{r}
+ggarrange(h2_scatter,  
+          NULL,
+          ggarrange(h2_density, comp_h2,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = F,
+                    widths = c(1.2, 1)), 
+          nrow = 3, 
+          labels = c("(A)", ""), vjust=1.2, hjust=0,
+          heights = c(1.8, 0.1, 1),# Labels of the scatter plot
+          common.legend = F ) 
+dev.print(pdf, file=paste0("../../../temp/h2_plots.pdf"), height=10, width=10)
+```
+
