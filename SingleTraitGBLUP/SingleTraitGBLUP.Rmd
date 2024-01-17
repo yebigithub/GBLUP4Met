@@ -1,0 +1,109 @@
+---
+title: "Single Trait GBLUP"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+source("../../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+##Loading pred corr 
+```{r}
+path.bglr = "../../../ARC_outputs/Met_same_genotypes_per_treatment/GBLUP/outputs_GBLUP/"
+PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm=NULL)
+# PreCorr = PreCorr %>% filter(Met != "ribitol")%>% droplevels()
+
+
+path.GK = "../../../ARC_outputs/Met_same_genotypes_per_treatment/GK/outputs_GK/"
+PreCorr_GK = load_pred_corr_func(path=path.GK, kernel = "GK", namm=NULL)
+# PreCorr_GK = PreCorr_GK %>% filter(Met != "ribitol") %>% droplevels()
+```
+
+
+## density plot for bglr-G predcorr
+```{r}
+mu_perMet = ddply(PreCorr, c("Treatment", 'Met'), summarise, value=mean(Corr, na.rm=T))
+Pred_Corr_dens = density_plot_generator(df=mu_perMet, 
+                       my_colors=RColorBrewer::brewer.pal(11, 'Spectral')[c(10,3)],
+                       limits_range = c(-0.2,1),
+                       breaks_range = seq(-0.2,1,0.2), 
+                       x_name = "Prediction accuracy",
+                       ylim = NULL,
+                       lines = T)
+Pred_Corr_dens
+# dev.print(pdf, file=paste0("../temp/BGLR_G_PredCorr_density.pdf"), height=4, width=8)
+```
+
+```{r}
+comp_PreCorr = compare_plot_generator(df = mu_perMet, 
+                       up_thr = 0.02, 
+                       low_thr = 0.15,
+                       limits_range = c(0,0.7),
+                       breaks_range = seq(0,0.7,0.1))
+
+comp_PreCorr
+# dev.print(pdf, file="../temp/Precorr_compare.pdf", height=8, width=8)
+```
+
+# ######Boxplot for PredCorr BGLR-G
+```{r}
+library(plyr)
+
+df = PreCorr
+mu <- ddply(df, "Treatment", summarise, corr.mean=mean(Corr, na.rm=T))
+head(mu)
+
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10, 3)]
+
+Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr)) + 
+           facet_grid(rows = vars(Treatment))+
+           geom_boxplot(aes(fill=Treatment), outlier.size=0.5, outlier.alpha = 0.7, lwd=0.3)+
+           labs(x="Metabolite accumulation", y = "Prediction accuracy") +
+           theme_bw()+
+           geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+           scale_y_continuous(limits=c(-0.6, 0.9), breaks=c(-0.6,-0.4,-0.2, 0, 0.2,0.4,0.6, 0.8, 1)) +
+           scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+           scale_color_manual(values = my_colors)+
+           theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                 axis.text.y=element_text(size=8))
+
+
+Pred_Cor_boxplot
+# dev.print(pdf, file="../temp/boxplot_BGLR_G.pdf", height = 6, width = 10)
+```
+
+```{r}
+library(ggpubr)
+ggarrange(Pred_Cor_boxplot,  
+          NULL,
+          ggarrange(Pred_Corr_dens, comp_PreCorr,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = F,
+                    widths = c(1.2, 1)), 
+          nrow = 3, 
+          labels = c("(A)", ""), vjust=1.5, hjust=0,
+          heights = c(1.8, 0.1, 1),# Labels of the scatter plot
+          common.legend = F ) 
+
+dev.print(pdf, file="../../../temp/GBLUP_plots.pdf", height=10, width=10)
+```
+
+
+
