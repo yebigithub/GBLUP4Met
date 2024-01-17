@@ -46,9 +46,9 @@ Figure 3: Genomic correlation estimates between the same metabolite accumulation
 - [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis
   
 <p align="center">
-  <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='70%' height='70%' alt="">
+  <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='90%' height='90%' alt="">
 </p> 
 
-Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
+Figure 5: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
 ## 5. Simultaneous regression modeling of metabolites
 ## 6. Deep learning models
