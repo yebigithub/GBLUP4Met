@@ -43,7 +43,7 @@ prediction difference between control and high night temperature stress conditio
 Figure 3: Genomic correlation estimates between the same metabolite accumulation measured under control and high night temperature stress conditions.  A) Scatter plot. B) Bar chart. Solid and dashed lines indicate mean and median, respectively.
 
 ## 4. Exporatory factor analysis
-- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis
+- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis to identify underlying latent factors controlling 66 metabolites.
   
 <p align="center">
   <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='90%' height='90%' alt="">
