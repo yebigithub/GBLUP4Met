@@ -58,7 +58,7 @@ Figure 5: Heat maps of factor loading values after removing cross-loading by set
 - [.Rmd file](./SimultaneousRegression/MegaLMM_drawing.Rmd) Drawing plots for MegaLMM.
 
 <p align="center">
-  <img src='./SimultaneousRegression/G_GK_Mega-1.png' width='90%' height='90%' alt="">
+  <img src='./SimultaneousRegression/G_GK_Mega-1.png' width='70%' height='70%' alt="">
 </p> 
 Figure 9: Percentage difference of gain in prediction accuracy for multi-trait genomic best linear unbiased prediction (MegaLMM-G) and multi-trait reproducing kernel Hilbert spaces regression (MegaLMM-GK) relative to single-trait genomic best linear unbiased prediction (A). Density plots of percentage difference are shown for MegaLMM-G (B) and MegaLMM-GK (C).
 
