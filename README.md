@@ -13,7 +13,7 @@ Preprint: link
 
 <figure align="center">
   <img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.png' width='70%' height='70%' >
-  <figcaption>Figure 2: Genomic heritability estimates of metabolite accumulation in control and high night temperature stress conditions. A) Scatter plot. B) Density plot. Solid and dashed lines indicate mean and median, respectively. C) Agreement of heritability estimates between control and high night temperature stress conditions. Metabolites in green and red colors indicate that the heritability difference between control and high night temperature stress conditions was small (< 0.05) and large (> 0.1).</figcaption>
+  <figcaption style='font-size: 1'>Figure 2: Genomic heritability estimates of metabolite accumulation in control and high night temperature stress conditions. A) Scatter plot. B) Density plot. Solid and dashed lines indicate mean and median, respectively. C) Agreement of heritability estimates between control and high night temperature stress conditions. Metabolites in green and red colors indicate that the heritability difference between control and high night temperature stress conditions was small (< 0.05) and large (> 0.1).</figcaption>
 </figure>
 
 ## 2. Single-trait genomic prediction of metabolites
