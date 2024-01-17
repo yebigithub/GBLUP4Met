@@ -40,7 +40,7 @@ prediction difference between control and high night temperature stress conditio
 <p align="center">
   <img src='./GenoCorrSameMet/Figure3.png' width='70%' height='70%' alt="">
 </p>  
-Genomic correlation estimates between the same metabolite accumulation measured under control and high night temperature stress conditions.  A) Scatter plot. B) Bar chart. Solid and dashed lines indicate mean and median, respectively.
+Figure 3: Genomic correlation estimates between the same metabolite accumulation measured under control and high night temperature stress conditions.  A) Scatter plot. B) Bar chart. Solid and dashed lines indicate mean and median, respectively.
 
 ## 4. Exporatory factor analysis
 ## 5. Simultaneous regression modeling of metabolites
