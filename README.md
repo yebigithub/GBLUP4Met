@@ -34,6 +34,14 @@ prediction difference between control and high night temperature stress conditio
 (< 0.05) and large (> 0.1).
 
 ## 3. Genomic correlation between the same metabolite in different treatments
+- [.R file](./GenoCorrSameMet/GenoCorrSameMet.R) Running multi-trait genomic correlation.
+- [.Rmd file](./GenoCorrSameMet/GenoCorrSameMet.Rmd) Drawing multi-trait genomic correlation plots.
+
+<p align="center">
+  <img src='./GenoCorrSameMet/Figure3.png' width='70%' height='70%' alt="">
+</p>  
+Genomic correlation estimates between the same metabolite accumulation measured under control and high night temperature stress conditions.  A) Scatter plot. B) Bar chart. Solid and dashed lines indicate mean and median, respectively.
+
 ## 4. Exporatory factor analysis
 ## 5. Simultaneous regression modeling of metabolites
 ## 6. Deep learning models

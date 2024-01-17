@@ -1,0 +1,82 @@
+---
+title: "Genomic Correlation among same metabolites"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+```{r}
+# library(BGLR)
+library(tidyverse)
+library(ggplot2)
+```
+
+
+```{r}
+source("../../Functions/functions.R")
+met_names = met_name_func("names")
+```
+
+
+```{r}
+load("../../../temp/log_lmer/bglrmulti_genetic_corr_perTreatment0.05.rda")
+ggcorr = do.call(rbind, genetic_corrL)
+ggcorr.df = data.frame(met1 = met_names, met2 = met_names, corr = as.numeric(ggcorr[,3]))
+ggcorr.df$met1 = factor(ggcorr.df$met1, levels = met_names)
+ggcorr.df$met2 = factor(ggcorr.df$met2, levels = met_names)
+# plot(1:67, ggcorr.df$corr)
+```
+
+
+```{r}
+my_colors1 <- RColorBrewer::brewer.pal(11, 'RdYlBu')[10]
+ggcor_bar = ggplot(data=ggcorr.df, aes(x=met1, y=corr, color=my_colors1)) + 
+  geom_segment(aes(x=met1,xend=met1,y=0, yend=corr), size = 4)+
+  labs(x="Metabolite accumulation", y = "Genomic correlation") +
+  theme_bw()+
+  scale_y_continuous(breaks = seq(-0.2,1,0.2))+
+  scale_x_discrete(position = "bottom") +
+  scale_color_manual(values=alpha(my_colors1, 0.8)) +
+  theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+        axis.text.y=element_text(size=8),legend.position="none")
+
+ggcor_bar
+# dev.print(pdf, file="../temp/barplot_ggcor_perTreatment0.05.pdf", height=6, width=10)
+```
+
+```{r}
+df = ggcorr.df
+library(plyr)
+muu = mean(df$corr)
+mediann = median(df$corr)
+
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(10,11)]
+
+summary(df$corr)
+
+ggcor_density = ggplot(df, aes(x=corr)) + 
+  geom_density(alpha=0.6, color = my_colors[1], fill = my_colors[1])+
+  geom_vline(aes(xintercept=muu), color=my_colors[2], linetype='solid', size = 0.8)+
+  geom_vline(aes(xintercept=mediann), color=my_colors[2], linetype='dashed', size = 0.8)+         
+  scale_x_continuous(limits=c(0, 1), breaks=seq(0,1,0.2)) +
+  labs(x="Genomic correlation", y = "Density") +
+  theme_bw()
+
+ggcor_density
+# dev.print(pdf, file="../temp/ggcor_density_plot.pdf", height=6, width=10)
+
+```
+```{r}
+library(ggpubr)
+ggarrange(ggcor_bar, 
+          NULL,
+          ggcor_density, 
+          nrow = 3, 
+          heights = c(3,0.2,2),
+          labels = c("(A)","", "(B)"), vjust = c(1.5,0,0), 
+          # vjust=-0.1,
+          common.legend = F)
+dev.print(pdf, file="../../../temp/ggcor_per_Treatment_plots.pdf", height=8, width=10)
+```
+
+
+
