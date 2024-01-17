@@ -3,7 +3,7 @@
 ## Abstract
 It has been argued that metabolites can be used to accelerate crop improvement because metabolic profiles in crops are generally under genetic control. Evaluating the role of genetics in metabolic variation is a longstanding challenge. Rice, one of the world's most important staple crops, is known to be sensitive to recent increases in nighttime temperatures. Quantification of metabolic levels can help measure rice responses to high nighttime temperature (HNT) stress. However, the extent of metabolic variation that can be explained by regression on whole-genome molecular markers remains to be answered. In the current study, primary metabolites of a rice diversity panel generated from grains using gas chromatography-mass spectrometry were used. The metabolites obtained were low to moderately heritable, and the genomic prediction accuracies of the metabolites were within the expected upper limit set by their genomic heritability estimates. Genomic heritability estimates were slightly higher in the control group than in the HNT group. Genomic correlation estimates for the same metabolites between the control and HNT conditions indicated the presence of genotype by environment interactions. Reproducing kernel Hilbert spaces regression and deep learning, which treat markers as images, improved prediction accuracy, suggesting that some metabolites are under non-additive genetic control. Joint analysis of multiple metabolites simultaneously was effective in improving prediction accuracy by exploiting correlations among metabolites. The current study serves as an important first step in evaluating the cumulative effects of the genome in regulating metabolic variation under control and HNT conditions. 
 
-Preprint: link
+Preprint: [link]()
 
 ## 0. Data Preprocessing
 - [.Rmd file](https://github.com/yebigithub/GBLUP4Met/blob/main/PreProcessing/DataPreprocessing.Rmd) Including metabolite and genotype data cleaning
@@ -43,5 +43,12 @@ prediction difference between control and high night temperature stress conditio
 Figure 3: Genomic correlation estimates between the same metabolite accumulation measured under control and high night temperature stress conditions.  A) Scatter plot. B) Bar chart. Solid and dashed lines indicate mean and median, respectively.
 
 ## 4. Exporatory factor analysis
+- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis
+  
+<p align="center">
+  <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='70%' height='70%' alt="">
+</p> 
+
+Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
 ## 5. Simultaneous regression modeling of metabolites
 ## 6. Deep learning models
