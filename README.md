@@ -12,7 +12,7 @@ Preprint: link
 - [.Rmd file](https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/h2_plot_drawing.Rmd) Drawing heritability plots.
 
 <p align="center">
-<img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.png' alt="Figure 2: Genomic heritability estimates of metabolite accumulation in control and high night temperature stress conditions. A) Scatter plot. B) Density plot. Solid and dashed lines indicate mean and median, respectively. C) Agreement of heritability estimates between control and high night temperature stress conditions. Metabolites in green and red colors indicate that the heritability difference between control and high night temperature stress conditions was small (< 0.05) and large (> 0.1)." width='70%' height='70%' >
+<img src='https://github.com/yebigithub/GBLUP4Met/blob/main/heritability/Figure2.png' alt="Figure 2: Genomic heritability estimates of metabolite accumulation in control and high night temperature stress conditions." width='70%' height='70%' >
 </p>
 
 ## 2. Single-trait genomic prediction of metabolites
