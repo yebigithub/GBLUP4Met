@@ -1,0 +1,105 @@
+---
+title: "Deep learning plot drawing"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+source("../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+
+
+##Loading pred corr 
+```{r}
+path.bglr = "../../ARC_outputs/Met_same_genotypes_per_treatment/GBLUP/outputs_GBLUP/"
+PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm=NULL)
+# PreCorr = PreCorr %>% filter(Met != "ribitol")%>% droplevels()
+
+
+path.GK = "../../ARC_outputs/Met_same_genotypes_per_treatment/GK/outputs_GK/"
+PreCorr_GK = load_pred_corr_func(path=path.GK, kernel = "GK", namm=NULL)
+# PreCorr_GK = PreCorr_GK %>% filter(Met != "ribitol") %>% droplevels()
+```
+
+
+#### Barplot
+
+##Load DL models
+```{r}
+DLs_model_names = c("VGG16", "ResNet50", "EfficientNetB7","InceptionV3", "MobileNetV2", "DenseNet201")
+DLs_RR_mu_L = list()
+PreCorr_DL_L = list()
+for (i in 1:6){
+  model_name = DLs_model_names[i]
+  DLs_RR_mu_L[[i]] = DLs_RR_mu_generator(model = model_name)
+  PreCorr_DL_L[[i]] = DLs_RR_PreCorr_generator(model = model_name)
+}
+names(DLs_RR_mu_L) = DLs_model_names
+names(PreCorr_DL_L) = DLs_model_names
+```
+
+
+```{r}
+# mm <- plyr::ddply(G_GK_dff, c("Treatment"), summarise, corr.mean=mean(Corr_diff, na.rm=T), corr.me = median(Corr_diff, na.rm=T))
+BGLR_G_mu$corr.mean[BGLR_G_mu$corr.mean < 0.1]=0
+
+DLs_model_names_selected = c("VGG16", "ResNet50", "EfficientNetB7","InceptionV3", "MobileNetV2", "DenseNet201")
+dff_DLs_L = list()
+for (i in 1:length(DLs_model_names_selected)){
+  dff_DLs_L[[i]] = pred_dff_generator(df1 = BGLR_G_mu,
+                                     df2 = DLs_RR_mu_L[[DLs_model_names_selected[i]]],
+                                     Method=DLs_model_names_selected[i])
+}
+
+dff_bglr_gk=pred_dff_generator(df1=BGLR_G_mu,
+                   df2=BGLR_GK_mu,
+                   Method="RKHS")
+dff_gblup = pred_dff_generator(df1=BGLR_G_mu,
+                               df2=BGLR_G_mu,
+                               Method="GBLUP")  
+my_colors <- RColorBrewer::brewer.pal(11, 'Spectral')[c(1:4, 9:11)]
+ccc = rbind(do.call(rbind, dff_DLs_L),
+            dff_bglr_gk)
+            
+ccc$Method = factor(ccc$Method, levels=c(DLs_model_names, "RKHS", "GBLUP"))
+
+ttt = ccc[!is.infinite(ccc$value), ]
+ttt = ttt %>% filter(value >= 0) %>% droplevels()
+limm = c(floor(min(ttt$value)), ceiling(max(ttt$value)))
+dp_diff <- ggplot(ttt, aes(y=value, x=Met, fill=Method)) +
+            # geom_line()+
+            geom_bar(stat="identity",position="dodge", width = 1)+
+            facet_grid(rows = vars(Treatment))+
+            labs(x="Metabolite accumulation", y = "Percentage difference (%)") +
+            theme_bw()+
+            geom_hline(aes(yintercept = 0), color = 'darkgrey', linetype='solid', linewidth = 0.3)+
+            # scale_y_continuous(limits=c(0, 90), breaks=seq(0,90,10)) +
+            # scale_y_continuous(limits=c(0,400)) +
+            scale_fill_manual(values = alpha(my_colors, 1))+
+            # scale_color_manual(values = my_colors)+
+            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                  axis.text.y=element_text(size=8))
+
+dp_diff
+
+dev.print(pdf, file="../../temp/DL_dff_barplot_0.1_positive.pdf", height = 6, width = 10)
+```
+
+
+

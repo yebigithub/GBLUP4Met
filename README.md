@@ -50,7 +50,7 @@ Figure 3: Genomic correlation estimates between the same metabolite accumulation
   <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='90%' height='90%' alt="">
 </p> 
 
-Figure 5: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
+Figure S2: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
 
 ## 5. Simultaneous regression modeling of metabolites
 - [.R file](./SimultaneousRegression/MegaLLM.R) Running MegaLMM for genomic prediction.
@@ -60,6 +60,12 @@ Figure 5: Heat maps of factor loading values after removing cross-loading by set
 <p align="center">
   <img src='./SimultaneousRegression/G_GK_Mega-1.png' width='70%' height='70%' alt="">
 </p> 
-Figure 9: Percentage difference of gain in prediction accuracy for multi-trait genomic best linear unbiased prediction (MegaLMM-G) and multi-trait reproducing kernel Hilbert spaces regression (MegaLMM-GK) relative to single-trait genomic best linear unbiased prediction (A). Density plots of percentage difference are shown for MegaLMM-G (B) and MegaLMM-GK (C).
+Figure 8: Percentage difference of gain in prediction accuracy for multi-trait genomic best linear unbiased prediction (MegaLMM-G) and multi-trait reproducing kernel Hilbert spaces regression (MegaLMM-GK) relative to single-trait genomic best linear unbiased prediction (A). Density plots of percentage difference are shown for MegaLMM-G (B) and MegaLMM-GK (C).
 
 ## 6. Deep learning models
+- [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
+
+<p align="center">
+  <img src='./DL/DL_dff_barplot_0.1_positive-1.png' width='70%' height='70%' alt="">
+</p> 
+Figure 5: Percentage difference of gain in prediction accuracy for single-trait reproducing kernel Hilbert spaces regression (RKHS), VGG16, ResNet50 EfficientNetB7, InceptionV3, MobileNetV2, and DenseNet201 relative to single-trait genomic best linear unbiased prediction.
