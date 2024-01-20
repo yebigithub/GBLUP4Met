@@ -66,6 +66,10 @@ Figure 8: Percentage difference of gain in prediction accuracy for multi-trait g
 - [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
 
 <p align="center">
+  <img src='./DL/workflow4DL-1.png' width='70%' height='70%' alt="">
+</p> 
+
+<p align="center">
   <img src='./DL/DL_dff_barplot_0.1_positive-1.png' width='70%' height='70%' alt="">
 </p> 
 Figure 5: Percentage difference of gain in prediction accuracy for single-trait reproducing kernel Hilbert spaces regression (RKHS), VGG16, ResNet50 EfficientNetB7, InceptionV3, MobileNetV2, and DenseNet201 relative to single-trait genomic best linear unbiased prediction.
