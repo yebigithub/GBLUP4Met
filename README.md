@@ -68,7 +68,9 @@ Figure 8: Percentage difference of gain in prediction accuracy for multi-trait g
 <p align="center">
   <img src='./DL/workflow4DL-1.png' width='80%' height='80%' alt="">
 </p> 
-
+Figure1: Flowchart of converting single nucleotide polymorphisms to image data
+    
+    
 <p align="center">
   <img src='./DL/DL_dff_barplot_0.1_positive-1.png' width='70%' height='70%' alt="">
 </p> 
