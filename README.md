@@ -66,7 +66,7 @@ Figure 8: Percentage difference of gain in prediction accuracy for multi-trait g
 - [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
 
 <p align="center">
-  <img src='./DL/workflow4DL-1.png' width='70%' height='70%' alt="">
+  <img src='./DL/workflow4DL-1.png' width='80%' height='80%' alt="">
 </p> 
 
 <p align="center">
