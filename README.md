@@ -71,8 +71,12 @@ Figure 8: Percentage difference of gain in prediction accuracy for multi-trait g
 Figure1: Flowchart of converting single nucleotide polymorphisms to image data
 
 <br/><br/>
+<p align="center">
+  <img src='./DL/SNPimagesExample-1.png' width='80%' height='80%' alt="">
+</p> 
+Figure 6: Example of a set of single nucleotide polymorphisms transformed into image data for a randomly selected genotype. Images of 12 chromosomes were processed in the multi-channel convolutional neural networks
 
-
+<br/><br/>
 <p align="center">
   <img src='./DL/DL_dff_barplot_0.1_positive-1.png' width='70%' height='70%' alt="">
 </p> 
