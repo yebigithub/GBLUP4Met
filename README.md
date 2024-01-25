@@ -65,6 +65,9 @@ Figure 8: Percentage difference of gain in prediction accuracy for multi-trait g
 
 
 ## 6. Deep learning models
+- [.ipynb](./DL/ConvertSNP2Image.ipynb) Shows examples about how to convert SNP tabular data into SNP images.
+- [.py file](./DL/ConvertSNP2Image.py) Loop converting for SNPs in all chromosomes.
+- [.py file](./DL/FeatureExtractorMulti.py) Convolutional neural network with multiple branches.
 - [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
   
 <p align="center">
@@ -74,7 +77,7 @@ Figure1: Flowchart of converting single nucleotide polymorphisms to image data
 
 <br/><br/>
 <p align="center">
-  <img src='./DL/SNPimagesExample-1.png' width='60%' height='60%' alt="">
+  <img src='./DL/SNPimagesExample-1.png' width='70%' height='60%' alt="">
 </p> 
 Figure 6: Example of a set of single nucleotide polymorphisms transformed into image data for a randomly selected genotype. Images of 12 chromosomes were processed in the multi-channel convolutional neural networks
 
