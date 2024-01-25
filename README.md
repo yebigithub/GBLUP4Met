@@ -84,3 +84,6 @@ Figure 5: Percentage difference of gain in prediction accuracy for single-trait 
 
 ## 7. Supplementary
 - [.Rmd file](./Supplementary/PhenoCorr.Rmd) Calculating phenotypical correaliton between metabolites in control and stress conditions.
+- [.Rmd file]() Drawing MegaLMM genomic correlation heatmaps.
+- [.Rmd file]() Drawing FA plots.
+- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) 
