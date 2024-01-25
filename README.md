@@ -45,12 +45,6 @@ Figure 3: Genomic correlation estimates between the same metabolite accumulation
 
 ## 4. Exporatory factor analysis
 - [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis to identify underlying latent factors controlling metabolites.
-  
-<!-- <p align="center">
-  <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='90%' height='90%' alt="">
-</p> 
-
-Figure S2: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B). -->
 
 ## 5. Simultaneous regression modeling of metabolites
 - [.R file](./SimultaneousRegression/MegaLLM.R) Running MegaLMM for genomic prediction.
@@ -59,15 +53,16 @@ Figure S2: Heat maps of factor loading values after removing cross-loading by se
 - [.Rmd file](./SimultaneousRegression/GenomicCorr.Rmd) Drawing genomic correlation density plot.
 
 <p align="center">
+  <img src='./SimultaneousRegression/ggcorr_MegaLMM_density_-1.png' width='70%' height='70%' alt="">
+</p>
+Figure 7: Genomic correlation estimates between different metabolite accumulation in control and high night temperature stress conditions. The solid and dashed lines indicate mean and median, respectively.
+<br/><br/>
+
+<p align="center">
   <img src='./SimultaneousRegression/G_GK_Mega-1.png' width='70%' height='70%' alt="">
 </p> 
 Figure 8: Percentage difference of gain in prediction accuracy for multi-trait genomic best linear unbiased prediction (MegaLMM-G) and multi-trait reproducing kernel Hilbert spaces regression (MegaLMM-GK) relative to single-trait genomic best linear unbiased prediction (A). Density plots of percentage difference are shown for MegaLMM-G (B) and MegaLMM-GK (C).
 
-<br/><br/>
-<p align="center">
-  <img src='./SimultaneousRegression/ggcorr_MegaLMM_density_-1.png' width='70%' height='70%' alt="">
-</p>
-Figure 7: Genomic correlation estimates between different metabolite accumulation in control and high night temperature stress conditions. The solid and dashed lines indicate mean and median, respectively.
 
 ## 6. Deep learning models
 - [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
@@ -91,6 +86,6 @@ Figure 5: Percentage difference of gain in prediction accuracy for single-trait 
 
 ## 7. Supplementary
 - [.Rmd file](./Supplementary/PhenoCorr.Rmd) Calculating phenotypical correaliton between metabolites in control and stress conditions.
-- [.Rmd file]() Drawing MegaLMM genomic correlation heatmaps.
+- [.Rmd file](./SimultaneousRegression/MegaLMM_ggcorr.R) Drawing MegaLMM genomic correlation heatmaps.
 - [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Drawing factorial analysis heatmaps.
-- [.Rmd file]() Drawing Factorial analysis density plots.
+- [.Rmd file](./Supplementary/FA_drawing.Rmd) Drawing factorial analysis density plots.
