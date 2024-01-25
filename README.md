@@ -55,12 +55,19 @@ Figure S2: Heat maps of factor loading values after removing cross-loading by se
 ## 5. Simultaneous regression modeling of metabolites
 - [.R file](./SimultaneousRegression/MegaLLM.R) Running MegaLMM for genomic prediction.
 - [.R file](./SimultaneousRegression/MegaLLM_GK.R) Running MegaLMM for RKHS.
-- [.Rmd file](./SimultaneousRegression/MegaLMM_drawing.Rmd) Drawing plots for MegaLMM.
+- [.Rmd file](./SimultaneousRegression/MegaLMM_drawing.Rmd) Drawing barplot, density plots for MegaLMM genomic prediction model.
+- [.Rmd file](./SimultaneousRegression/GenomicCorr.Rmd) Drawing genomic correlation density plot.
 
 <p align="center">
   <img src='./SimultaneousRegression/G_GK_Mega-1.png' width='70%' height='70%' alt="">
 </p> 
 Figure 8: Percentage difference of gain in prediction accuracy for multi-trait genomic best linear unbiased prediction (MegaLMM-G) and multi-trait reproducing kernel Hilbert spaces regression (MegaLMM-GK) relative to single-trait genomic best linear unbiased prediction (A). Density plots of percentage difference are shown for MegaLMM-G (B) and MegaLMM-GK (C).
+
+<br/><br/>
+<p align="center">
+  <img src='./SimultaneousRegression/ggcorr_MegaLMM_density_-1.png' width='70%' height='70%' alt="">
+</p>
+Figure 7: Genomic correlation estimates between different metabolite accumulation in control and high night temperature stress conditions. The solid and dashed lines indicate mean and median, respectively.
 
 ## 6. Deep learning models
 - [.Rmd file](./DL/DL_drawing.Rmd) Drawing barplot to compare performance of all deep learning models and RKHS.
