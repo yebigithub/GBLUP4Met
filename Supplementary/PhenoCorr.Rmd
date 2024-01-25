@@ -1,0 +1,77 @@
+---
+title: "PhenoCorr"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r}
+library(ggplot2)
+library(plyr)
+library(pheatmap)
+library(corrplot)
+library(gridGraphics)
+library(grid)
+```
+
+
+```{r}
+source("../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+# met_names = 1:66
+```
+
+###########
+## heatmap for met.rr phenotypic correlation
+###########
+```{r}
+met.rr.con = read.csv("../../Met/met_rr_control_named.csv")
+cor_con = cor(met.rr.con[,-c(1:2)])
+met.rr.trt = read.csv("../../Met/met_rr_stress_named.csv")
+cor_trt = cor(met.rr.trt[,-c(1:2)])
+```
+
+```{r}
+
+p1=corrplot(cor_con, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(A)", mar=c(0,0,1,0))
+# grid.echo()
+P1 <- grid.grab()
+# dev.print(pdf, file=paste0("../temp/heatmap_pheno_corr_control.pdf"), height=6, width=10)
+p2=corrplot(cor_trt, tl.col="black", tl.cex = .5, tl.pos="ld", tl.srt = 10, method="circle", type="lower", cl.ratio=0.1, title = "(B)", mar=c(0,0,1,0))
+# grid.echo()
+P2 <- grid.grab()
+# dev.print(pdf, file=paste0("../temp/heatmap_pheno_corr_stress.pdf"), height=6, width=10)
+
+```
+
+```{r}
+cor_matrix = cor_con
+# Find pairs with correlation values greater than 0.5
+high_cor_pairs <- which(cor_matrix >= 0.8 & cor_matrix != 1, arr.ind = T) #arr.ind can show the relative position of each value satisfied condition.
+
+# Print the pairs and their correlation values
+for (i in 1:nrow(high_cor_pairs)) {
+  row_idx <- high_cor_pairs[i, 1]
+  col_idx <- high_cor_pairs[i, 2]
+  correlation_value <- cor_matrix[row_idx, col_idx]
+  cat("Pair:", rownames(cor_matrix)[row_idx], "-", colnames(cor_matrix)[col_idx], ", Correlation:", correlation_value, "\n")
+}
+```
+```{r}
+cor_matrix = cor_trt
+# Find pairs with correlation values greater than 0.5
+high_cor_pairs <- which(abs(cor_matrix) > 0.80 & cor_matrix != 1, arr.ind = TRUE)
+
+# Print the pairs and their correlation values
+for (i in 1:nrow(high_cor_pairs)) {
+  row_idx <- high_cor_pairs[i, 1]
+  col_idx <- high_cor_pairs[i, 2]
+  correlation_value <- cor_matrix[row_idx, col_idx]
+  cat("Pair:", rownames(cor_matrix)[row_idx], "-", colnames(cor_matrix)[col_idx], ", Correlation:", correlation_value, "\n")
+}
+```
+
