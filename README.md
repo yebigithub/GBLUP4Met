@@ -46,11 +46,11 @@ Figure 3: Genomic correlation estimates between the same metabolite accumulation
 ## 4. Exporatory factor analysis
 - [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Factorial analysis to identify underlying latent factors controlling metabolites.
   
-<p align="center">
+<!-- <p align="center">
   <img src='./FactorAnalysis/heatmap4FA_combined-1.png' width='90%' height='90%' alt="">
 </p> 
 
-Figure S2: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B).
+Figure S2: Heat maps of factor loading values after removing cross-loading by setting a cutoff value of lambda > |0.4|. The rows of each panel correspond to the observed metabolite accumulations and the columns correspond to five latent factors in control (A) and high night temperature stress conditions (B). -->
 
 ## 5. Simultaneous regression modeling of metabolites
 - [.R file](./SimultaneousRegression/MegaLLM.R) Running MegaLMM for genomic prediction.
@@ -85,5 +85,5 @@ Figure 5: Percentage difference of gain in prediction accuracy for single-trait 
 ## 7. Supplementary
 - [.Rmd file](./Supplementary/PhenoCorr.Rmd) Calculating phenotypical correaliton between metabolites in control and stress conditions.
 - [.Rmd file]() Drawing MegaLMM genomic correlation heatmaps.
-- [.Rmd file]() Drawing FA plots.
-- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) 
+- [.Rmd file](./FactorAnalysis/FA4Met.Rmd) Drawing factorial analysis heatmaps.
+- [.Rmd file]() Drawing Factorial analysis density plots.
