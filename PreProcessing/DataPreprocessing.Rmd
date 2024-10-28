@@ -16,6 +16,14 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(lme4)
 library(readxl)
+library(devtools)
+library(ggbiplot)
+library(pheatmap)
+library(tidyverse)
+library(ggplot2)
+library(ggpubr)
+library(ggfortify)#draw pca plots
+library(data.table)
 ```
 
 # 1. Metabolite data cleaning.
@@ -247,6 +255,7 @@ all(map_rr$SNPName == colnames(geno_rr))
 save(geno_rr, file="../Geno/geno.rr.RData")
 save(map_rr, file = "../Geno/map.rr.RData")
 
+
 ## Convert Geno into G matrix.
 load("../Geno/geno.rr.RData")
 geno <- geno_rr
@@ -277,6 +286,72 @@ write.csv(G.rr, "../Geno/G.rr.csv", quote = F, row.names = T)
 write.csv(geno.rr, "../Geno/geno.rr.csv", quote = F, row.names = T)
 ```
 
+# #############################################
+## Draw PCA plot for subpopulation
+# #############################################
+
+```{r}
+met_rr_control <- read.csv("../Met/met_rr_control.csv")
+met_rr_stress <- read.csv("../Met/met_rr_stress.csv")
+id_control <- met_rr_control$NSFTV_ID
+id_stress <- met_rr_stress$NSFTV_ID
+id_comb <- union(id_control, id_stress)
+
+
+## Convert Geno into G matrix.
+load("../../../Geno/geno.rr.RData") #geno_rr
+load('../Geno/map.rr.RData') #map_rr
+geno <- geno_rr
+# map <- map_rr
+load("../../../Geno/GL.RData")
+G.rr = GL$Control
+```
+## sub info
+```{r}
+#read into subpop info
+panel_info_clean <- read.delim("../../../Geno/raw_data/panel_info_clean.txt")
+subpop <- panel_info_clean %>% filter(Sample.set == "RDP1")
+subpop$Other.accession.ID = gsub("NSFTV", "NSFTV_", subpop$Other.accession.ID)
+
+table(subpop$Other.accession.ID %in% rownames(geno_rr))
+table(rownames(geno) %in% subpop$Other.accession.ID) #all in suspop txt file.
+```
+
+## Function for combine geno and subpop in one dataframe.
+```{r}
+pca_sub_func=function(geno, Gchnt){
+            pop.df = subpop[subpop$Other.accession.ID %in% rownames(geno),]
+            pop.df = data.frame(NSFTV_ID = pop.df$Other.accession.ID,
+                                  Subpopu = pop.df$fastStructure.subpopulation.call)
+
+            G.df = data.frame(NSFTV_ID = rownames(Gchnt), Gchnt)
+            G.suspop = merge(G.df, pop.df)
+            return(G.suspop)
+            }
+```
+
+```{r}
+G.suspop = pca_sub_func(geno = geno, Gchnt = G.rr)
+table(G.suspop$Subpopu)
+```
+#control
+```{r, echo = TRUE, eval=TRUE}
+G.suspop = G.suspop %>% group_by(Subpopu) %>% mutate(Subpopulation = paste0(Subpopu, ":", n()))
+
+cc.pca = prcomp(G.suspop[,-c(1, ncol(G.suspop), ncol(G.suspop)-1)], scale. = T)
+
+autoplot(cc.pca, data = G.suspop, colour = "Subpopulation", size = 2.5) + 
+  theme_bw()+
+  scale_color_brewer(palette = "Dark2")
+
+
+
+dev.print(pdf, file = file.path("../../../temp/pca_geno_comb.pdf"), height = 6, width = 8)
+```
+
+
+
+
 ### splite SNP matrix by chromosome
 ```{r, eval=FALSE}
 met_rr_control <- read.csv("../Met/met_rr_control.csv")
@@ -292,8 +367,8 @@ load('../Geno/map.rr.RData') #map_rr
 geno <- geno_rr
 map <- map_rr
 
-geno_control = geno[id_control, ] #193
-geno_stress = geno[id_stress, ] #189
+geno_control = geno[id_control, ] 
+geno_stress = geno[id_stress, ] 
 
 genoL = list(Control = geno_control,
              Stress = geno_stress)
