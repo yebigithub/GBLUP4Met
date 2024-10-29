@@ -289,15 +289,22 @@ write.csv(geno.rr, "../Geno/geno.rr.csv", quote = F, row.names = T)
 # #############################################
 ## Draw PCA plot for subpopulation
 # #############################################
-
+## Loading files
 ```{r}
 met_rr_control <- read.csv("../../../Met/met_rr_control_named.csv")
 met_rr_stress <- read.csv("../../../Met/met_rr_stress_named.csv")
 id_control <- met_rr_control$NSFTV_ID
 rownames(met_rr_control) = met_rr_control$NSFTV_ID
 rownames(met_rr_stress) = met_rr_stress$NSFTV_ID
-id_stress <- met_rr_stress$NSFTV_ID
-id_comb <- union(id_control, id_stress)
+
+Mcs.con = scale(met_rr_control[,-c(1:2)]) 
+Mchnt.con = tcrossprod(Mcs.con)/ncol(Mcs.con)
+M.rr.con = cbind.data.frame(NSFTV_ID = rownames(Mchnt.con), Mchnt.con)
+
+Mcs.trt = scale(met_rr_stress[,-c(1:2)]) 
+Mchnt.trt = tcrossprod(Mcs.trt)/ncol(Mcs.trt)
+M.rr.trt = cbind.data.frame(NSFTV_ID = rownames(Mchnt.trt), Mchnt.trt)
+
 
 
 ## Convert Geno into G matrix.
@@ -306,6 +313,7 @@ geno <- geno_rr
 # map <- map_rr
 load("../../../Geno/GL.RData")
 G.rr = GL$Control
+G.rr = cbind.data.frame(NSFTV_ID = rownames(G.rr), G.rr)
 ```
 ## sub info
 ```{r}
@@ -314,55 +322,77 @@ panel_info_clean <- read.delim("../../../Geno/raw_data/panel_info_clean.txt")
 subpop <- panel_info_clean %>% filter(Sample.set == "RDP1")
 subpop$Other.accession.ID = gsub("NSFTV", "NSFTV_", subpop$Other.accession.ID)
 
-table(subpop$Other.accession.ID %in% rownames(geno_rr))
-table(rownames(geno) %in% subpop$Other.accession.ID) #all in suspop txt file.
+table(subpop$Other.accession.ID %in% rownames(G.rr))
+table(rownames(G.rr) %in% subpop$Other.accession.ID) #all in suspop txt file.
 
-table(subpop$Other.accession.ID %in% met_rr_control$NSFTV_ID)
-table(met_rr_control$NSFTV_ID %in% subpop$Other.accession.ID) #all in suspop txt file.
-all(met_rr_control$NSFTV_ID == met_rr_stress$NSFTV_ID)
+table(subpop$Other.accession.ID %in% M.rr.con$NSFTV_ID)
+table(M.rr.con$NSFTV_ID %in% subpop$Other.accession.ID) #all in suspop txt file.
+all(M.rr.con$NSFTV_ID == M.rr.trt$NSFTV_ID)
 ```
 
 ## Function for combine geno or met and subpop in one dataframe.
 ```{r}
-pca_sub_func=function(geno, Gchnt){
-            pop.df = subpop[subpop$Other.accession.ID %in% rownames(geno),]
+pca_sub_func=function(MM, subpop){
+            pop.df = subpop[subpop$Other.accession.ID %in% MM$NSFTV_ID,]
             pop.df = data.frame(NSFTV_ID = pop.df$Other.accession.ID,
                                   Subpopu = pop.df$fastStructure.subpopulation.call)
 
-            G.df = data.frame(NSFTV_ID = rownames(Gchnt), Gchnt)
-            G.suspop = merge(G.df, pop.df)
-            return(G.suspop)
+            # MM.df = data.frame(NSFTV_ID = MM$NSFTV_ID, MM)
+            MM.suspop = merge(MM, pop.df)
+            return(MM.suspop)
             }
 ```
 
 ```{r}
-G.suspop = pca_sub_func(geno = geno, Gchnt = G.rr)
+G.suspop = pca_sub_func(MM=G.rr, subpop=subpop)
 table(G.suspop$Subpopu)
 
-Met_control_suspop = pca_sub_func(geno = met_rr_control, Gchnt = met_rr_control)
-table(Met_control_suspop$Subpopu)
+met_control.suspop = pca_sub_func(MM=M.rr.con, subpop=subpop)
+table(met_control.suspop$Subpopu)
 
-Met_stress_suspop = pca_sub_func(geno = met_rr_stress, Gchnt = met_rr_control)
-table(Met_stress_suspop$Subpopu)
+met_stress.suspop = pca_sub_func(MM=M.rr.trt, subpop=subpop)
+table(met_stress.suspop$Subpopu)
 ```
 
 ```{r, echo = TRUE, eval=TRUE}
 pca_plot_drawing_func = function(suspop, name){
   
-  suspop = suspop %>% group_by(Subpopu) %>% mutate(Subpopulation = paste0(Subpopu, ":", n()))
+  suspop = suspop %>% group_by(Subpopu) %>% mutate(Subpopu = paste0(Subpopu, ":", n()))
   
-  cc.pca = prcomp(suspop[,-c(1, ncol(suspop), ncol(suspop)-1)], scale. = T)
+  cc.pca = prcomp(suspop[,!(colnames(suspop) %in% c('NSFTV_ID', 'Subpopu'))], scale. = T)
   
-  p = autoplot(cc.pca, data = suspop, colour = "Subpopulation", size = 2.5) + 
+  p = autoplot(cc.pca, data = suspop, colour = "Subpopu", size = 2.5) + 
     theme_bw()+
+    labs(color = "Subpopulation")+
     scale_color_brewer(palette = "Dark2")
   
+  p
   return(p)
 }
 
-pca_plot_drawing_func(suspop = G.suspop, name = 'geno')
-pca_plot_drawing_func(suspop = Met_control_suspop, name = 'Control')
-pca_plot_drawing_func(suspop = Met_stress_suspop, name = 'Stress')
+p_G = pca_plot_drawing_func(suspop = G.suspop, name = 'geno')
+
+p_met_control = pca_plot_drawing_func(suspop = met_control.suspop, name = 'met_control')
+p_met_control
+p_met_stress = pca_plot_drawing_func(suspop = met_stress.suspop, name = 'met_stress')
+p_met_stress
+```
+
+
+```{r, echo = TRUE, eval=TRUE}
+library(ggpubr)
+ggarrange(NULL,
+          p_met_control, 
+          NULL,
+          p_met_stress, 
+          nrow = 4, 
+          heights = c(0.2,3,0.2,3),
+          labels = c("","(A)","", "(B)"), vjust = c(0,-0.5,0,0), #To show the entire (A) label, adjuest vjust and add NULL
+          # vjust=-0.1,
+          legend = "right",
+          common.legend = T)
+dev.print(pdf, file="../../../temp/pca_met.pdf", height=10, width=7)
+
 ```
 
 
