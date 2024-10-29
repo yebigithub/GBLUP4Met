@@ -291,16 +291,17 @@ write.csv(geno.rr, "../Geno/geno.rr.csv", quote = F, row.names = T)
 # #############################################
 
 ```{r}
-met_rr_control <- read.csv("../Met/met_rr_control.csv")
-met_rr_stress <- read.csv("../Met/met_rr_stress.csv")
+met_rr_control <- read.csv("../../../Met/met_rr_control_named.csv")
+met_rr_stress <- read.csv("../../../Met/met_rr_stress_named.csv")
 id_control <- met_rr_control$NSFTV_ID
+rownames(met_rr_control) = met_rr_control$NSFTV_ID
+rownames(met_rr_stress) = met_rr_stress$NSFTV_ID
 id_stress <- met_rr_stress$NSFTV_ID
 id_comb <- union(id_control, id_stress)
 
 
 ## Convert Geno into G matrix.
 load("../../../Geno/geno.rr.RData") #geno_rr
-load('../Geno/map.rr.RData') #map_rr
 geno <- geno_rr
 # map <- map_rr
 load("../../../Geno/GL.RData")
@@ -315,9 +316,13 @@ subpop$Other.accession.ID = gsub("NSFTV", "NSFTV_", subpop$Other.accession.ID)
 
 table(subpop$Other.accession.ID %in% rownames(geno_rr))
 table(rownames(geno) %in% subpop$Other.accession.ID) #all in suspop txt file.
+
+table(subpop$Other.accession.ID %in% met_rr_control$NSFTV_ID)
+table(met_rr_control$NSFTV_ID %in% subpop$Other.accession.ID) #all in suspop txt file.
+all(met_rr_control$NSFTV_ID == met_rr_stress$NSFTV_ID)
 ```
 
-## Function for combine geno and subpop in one dataframe.
+## Function for combine geno or met and subpop in one dataframe.
 ```{r}
 pca_sub_func=function(geno, Gchnt){
             pop.df = subpop[subpop$Other.accession.ID %in% rownames(geno),]
@@ -333,20 +338,31 @@ pca_sub_func=function(geno, Gchnt){
 ```{r}
 G.suspop = pca_sub_func(geno = geno, Gchnt = G.rr)
 table(G.suspop$Subpopu)
+
+Met_control_suspop = pca_sub_func(geno = met_rr_control, Gchnt = met_rr_control)
+table(Met_control_suspop$Subpopu)
+
+Met_stress_suspop = pca_sub_func(geno = met_rr_stress, Gchnt = met_rr_control)
+table(Met_stress_suspop$Subpopu)
 ```
-#control
+
 ```{r, echo = TRUE, eval=TRUE}
-G.suspop = G.suspop %>% group_by(Subpopu) %>% mutate(Subpopulation = paste0(Subpopu, ":", n()))
+pca_plot_drawing_func = function(suspop, name){
+  
+  suspop = suspop %>% group_by(Subpopu) %>% mutate(Subpopulation = paste0(Subpopu, ":", n()))
+  
+  cc.pca = prcomp(suspop[,-c(1, ncol(suspop), ncol(suspop)-1)], scale. = T)
+  
+  p = autoplot(cc.pca, data = suspop, colour = "Subpopulation", size = 2.5) + 
+    theme_bw()+
+    scale_color_brewer(palette = "Dark2")
+  
+  return(p)
+}
 
-cc.pca = prcomp(G.suspop[,-c(1, ncol(G.suspop), ncol(G.suspop)-1)], scale. = T)
-
-autoplot(cc.pca, data = G.suspop, colour = "Subpopulation", size = 2.5) + 
-  theme_bw()+
-  scale_color_brewer(palette = "Dark2")
-
-
-
-dev.print(pdf, file = file.path("../../../temp/pca_geno_comb.pdf"), height = 6, width = 8)
+pca_plot_drawing_func(suspop = G.suspop, name = 'geno')
+pca_plot_drawing_func(suspop = Met_control_suspop, name = 'Control')
+pca_plot_drawing_func(suspop = Met_stress_suspop, name = 'Stress')
 ```
 
 
