@@ -352,6 +352,11 @@ table(met_control.suspop$Subpopu)
 
 met_stress.suspop = pca_sub_func(MM=M.rr.trt, subpop=subpop)
 table(met_stress.suspop$Subpopu)
+
+
+suspop.df = data.frame(NSFTV_ID = met_control.suspop$NSFTV_ID,  
+                       Subpopu = met_control.suspop$Subpopu)
+write.csv(suspop.df, file = file.path("../../../Met/raw_data/subpopulation.csv"), row.names = F, quote = F)
 ```
 
 ```{r, echo = TRUE, eval=TRUE}

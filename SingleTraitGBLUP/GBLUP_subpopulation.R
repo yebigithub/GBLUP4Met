@@ -1,12 +1,14 @@
-ARGS <- commandArgs(trailingOnly = TRUE)
+# ARGS <- commandArgs(trailingOnly = TRUE)
 ia = ARGS[1]
 ib = ARGS[2]
-treatment0 = ARGS[3]
+treatment0 = 'Control'
 
 
 #################################################################
-path.output = "./outputs_bglr"
-path.geno = "../Geno" 
+path.output = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_subpopulation/"
+path.geno = "../../Geno" 
+subpopulation <- read_csv("../../Met/raw_data/subpopulation.csv")
+
 
 library(BGLR)
 library(tidyverse)
@@ -15,7 +17,7 @@ library(tidyverse)
 pred_func <- function(treatment, method){
 
   # G matrix
-  load("../Geno/GL.RData")
+  load("../../Geno/GL.RData")
   G <- GL[[treatment]]
   EVD_G <- eigen(G)
   
@@ -30,13 +32,13 @@ pred_func <- function(treatment, method){
   # predictive correlation
   corR_GBLUP <- matrix(0, ncol = length(name), nrow = nCV) #GBLUP
   colnames(corR_GBLUP) = name
-  
+  subpopulations = unique(subpopulation$Subpopu)
   met0<-list()
   # CV
-  for (i in ia:ib) {
+  for (i in subpopulations) {
 
     # random-sampling to decide testing & reference accessions
-    met0[[i]] = read.csv(paste0("../Met/CrossValidation/cv_",i,"/met_cv_",i,".csv"))
+    met0[[i]] = read.csv(paste0("../../Met/CrossValidation/cv_",i,"/met_cv_",i,".csv"))
     met <- met0[[i]] %>% filter(Treatment == treatment)
     index <- which(met$set=="test")# random sampling
     y0 <- dplyr::select(met, -c("NSFTV_ID", "Treatment", "set"))
