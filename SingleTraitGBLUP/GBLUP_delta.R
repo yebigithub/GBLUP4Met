@@ -1,22 +1,22 @@
-ARGS <- commandArgs(trailingOnly = TRUE)
-ia = ARGS[1]
-ib = ARGS[2]
-treatment0 = ARGS[3]
+# ARGS <- commandArgs(trailingOnly = TRUE)
+# ia = ARGS[1]
+# ib = ARGS[2]
+# treatment0 = ARGS[3]
 
 
 #################################################################
-path.output = "./outputs_bglr"
-path.geno = "../Geno" 
+path.output = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_delta/"
+path.geno = "../../Geno" 
 
 library(BGLR)
 library(tidyverse)
 
 #################################################################
-pred_func <- function(treatment, method){
+pred_func <- function(method){
 
   # G matrix
-  load("../Geno/GL.RData")
-  G <- GL[[treatment]]
+  load("../../Geno/GL.RData")
+  G <- GL[[1]]
   EVD_G <- eigen(G)
   
   # Set up kernel for GBLUP
@@ -24,22 +24,31 @@ pred_func <- function(treatment, method){
     G = list(V=EVD_G$vectors, d=EVD_G$values, model='RKHS')
   )
   nCV = 100
-  name <- c(paste0("a",1:10),paste0("b",1:10),paste0("c",1:10),paste0("d",1:10),paste0("e",1:10),paste0("f",1:10),paste0("g",1:10),paste0("h",1:3))
-  # met2remove=c(13,28,30,38,62,67)
-  # name = name[-met2remove]
-  # predictive correlation
-  corR_GBLUP <- matrix(0, ncol = length(name), nrow = nCV) #GBLUP
-  colnames(corR_GBLUP) = name
   
-  met0<-list()
+  # predictive correlation
+  corR_GBLUP <- matrix(0, ncol = 66, nrow = nCV) #GBLUP
+  colnames(corR_GBLUP) = name
+
   # CV
-  for (i in ia:ib) {
+  for (i in 1:nCV) {
 
     # random-sampling to decide testing & reference accessions
-    met0[[i]] = read.csv(paste0("../Met/CrossValidation/cv_",i,"/met_cv_",i,".csv"))
-    met <- met0[[i]] %>% filter(Treatment == treatment)
+    met0 = read.csv(paste0("../../Met/CrossValidation/cv_",i,"/met_cv_",i,".csv"))
+    met_control0 <- met0 %>% filter(Treatment == 'Control')
+    met_control = met_control0[, !(colnames(met_control0) %in% c('NSFTV_ID', 'Treatment', 'set'))]
+    met_stress0 <- met0 %>% filter(Treatment == 'Stress')
+    met_stress = met_stress0[, !(colnames(met_stress0) %in% c('NSFTV_ID', 'Treatment', 'set'))]
+    
+    met_delta = data.frame(NSFTV_ID = met_control0$NSFTV_ID, 
+                            set = met_control0$set,
+                            met_control - met_stress)
+    met = met_delta
+
+    name <- colnames(met)[!(colnames(met) %in% c('NSFTV_ID', 'Treatment', 'set', 'Subpopu'))]
+    colnames(corR_GBLUP) = name
+    
     index <- which(met$set=="test")# random sampling
-    y0 <- dplyr::select(met, -c("NSFTV_ID", "Treatment", "set"))
+    y0 <- dplyr::select(met, -c("NSFTV_ID", "set"))
     y <- y0
     y[index, ] <- NA
     
@@ -58,13 +67,12 @@ pred_func <- function(treatment, method){
       
       }
     #save results for every CV iteration.
-    saveRDS(corR_GBLUP[i, ], file=file.path(path.output, paste0(treatment, "_", method, "_cv_",i,".RDS")))
+    saveRDS(corR_GBLUP[i, ], file=file.path(path.output, paste0("delta_cv_",i,".RDS")))
   }
   # save(corR_GBLUP, file=file.path(path.output, paste0(treatment, "_", method,"_r2_", R20, ".rda")))
 }
 
 #################################################################
-
-pred_func(treatment = treatment0, method = "bglr")
+pred_func(method = 'bglr')
 
 

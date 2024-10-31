@@ -26,7 +26,6 @@ pred_func <- function(treatment, method){
   
   nCV = as.numeric(length(subss))
   
-  
   # predictive correlation
   corR_GBLUP <- matrix(0, ncol = 66, nrow = nCV) #GBLUP
   
