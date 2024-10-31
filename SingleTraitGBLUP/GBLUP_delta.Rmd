@@ -1,0 +1,104 @@
+---
+title: "Single Trait GBLUP"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+setwd("~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/Githubs/GBLUP4Met/SingleTraitGBLUP")
+source("../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+##Loading pred corr 
+```{r}
+path.bglr = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_delta/"
+
+load_pred_corr_func <- function(path, namm, kernel){
+  PredCorr_L <- list()
+  nCV = 100
+  for (i in 1:nCV){
+    PredCorr_L[[i]] <- readRDS(file=file.path(path,paste0(namm,"_cv_",i,".RDS")))
+  }
+  
+  corr.df <- do.call(rbind, PredCorr_L)
+  colnames(corr.df)= met_names
+  
+  corr_long <- reshape2::melt(corr.df)
+  colnames(corr_long) <- c("CV", "Met", "Corr")
+
+  corr_long = corr_long %>% arrange(CV)
+  
+  return(corr_long)
+}
+
+
+PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm='delta')
+```
+
+
+# ######Boxplot for PredCorr BGLR-G
+```{r}
+library(plyr)
+
+df = PreCorr
+
+# Load dplyr for data manipulation
+library(dplyr)
+
+# Calculate mean Corr for each Met and assign colors based on the mean
+df <- df %>%
+  group_by(Met) %>%
+  mutate(color_group = ifelse(mean(Corr) < 0, "pink", "lightblue")) %>%
+  ungroup()
+
+# Plot with conditional colors based on average Corr and no legend
+Pred_Cor_boxplot <- ggplot(df, aes(x = Met, y = Corr, fill = color_group)) + 
+           geom_boxplot(outlier.size = 0.5, outlier.alpha = 0.7, lwd = 0.3) +
+           labs(x = "Metabolite accumulation", y = "Prediction accuracy") +
+           theme_bw() +
+           scale_fill_manual(values = c("pink" = "pink", "lightblue" = "lightblue")) +
+           guides(fill = "none") +  # Remove the legend
+           theme(axis.text.x = element_text(size = 8, angle = 90, hjust = 0.95, vjust = 0.2),
+                 axis.text.y = element_text(size = 8))
+
+Pred_Cor_boxplot
+
+
+
+dev.print(pdf, file="../../../temp/boxplot_gblup_delta.pdf", height = 6, width = 10)
+```
+
+```{r}
+library(ggpubr)
+ggarrange(Pred_Cor_boxplot,  
+          NULL,
+          ggarrange(Pred_Corr_dens, comp_PreCorr,
+                    ncol = 2, labels = c("(B)", "(C)"), 
+                    vjust=-0.1, 
+                    common.legend = F,
+                    widths = c(1.2, 1)), 
+          nrow = 3, 
+          labels = c("(A)", ""), vjust=1.5, hjust=0,
+          heights = c(1.8, 0.1, 1),# Labels of the scatter plot
+          common.legend = F ) 
+
+dev.print(pdf, file="../../../temp/GBLUP_plots.pdf", height=10, width=10)
+```
+
+
+
