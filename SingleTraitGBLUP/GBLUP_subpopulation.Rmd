@@ -1,0 +1,72 @@
+---
+title: "Single Trait GBLUP"
+author: "Ye Bi"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+library(plyr)
+library(ggpubr)
+library(ggrepel)
+library(tidyverse)
+library(stargazer)
+library(patchwork)
+library(ggplot2)
+```
+
+## Drawing plots for h2, varE, varG
+```{r}
+source("../Functions/functions.R")
+met_names = met_name_func(mode = 'name')
+```
+
+##Loading pred corr 
+```{r}
+path.bglr = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_subpopulation"
+PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm='bglr')
+```
+
+
+# ######Boxplot for PredCorr BGLR-G
+```{r}
+library(plyr)
+
+df = PreCorr
+mu <- ddply(df, "Treatment", summarise, corr.mean=mean(Corr, na.rm=T))
+head(mu)
+
+my_colors <- RColorBrewer::brewer.pal(8, "Dark2")[5:8]
+df$CV = as.factor(df$CV)
+subss = c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')
+for(i in 1:4){
+df$CV = gsub(i, subss[i], df$CV)
+}
+
+Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr), color = CV, fill = CV) + 
+           facet_grid(rows = vars(Treatment))+
+           geom_point(aes(fill=CV, color = CV))+
+           labs(x="Metabolite accumulation", y = "Prediction accuracy") +
+           theme_bw()+
+           # geom_hline(data=mu, aes(yintercept=corr.mean, color=Treatment), linetype='solid', linewidth = 1)+
+           scale_y_continuous(limits=c(-0.5, 0.65), breaks=seq(-0.5,0.7,0.2)) +
+           scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+           scale_color_manual(values = my_colors)+
+          # scale_color_brewer(palette = "Dark2")+
+           theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                 axis.text.y=element_text(size=8))+
+          labs(fill = "Subpopulation prediction", color = "Subpopulation prediction") 
+
+Pred_Cor_boxplot
+dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width = 10)
+```
+
+```{r}
+gblup = mu_perMet
+subpop = df
+```
+
+
+

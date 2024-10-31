@@ -9,6 +9,8 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/Githubs/GBLUP4Met")
+
 ```
 
 # loading packages
@@ -24,6 +26,9 @@ library(ggplot2)
 library(ggpubr)
 library(ggfortify)#draw pca plots
 library(data.table)
+
+met_path = "../../Met"
+geno_path = "../../Geno"
 ```
 
 # 1. Metabolite data cleaning.
@@ -187,7 +192,7 @@ write.csv(met_rr_control, "../Met/met_rr_control_named.csv", row.names = F, quot
 write.csv(met_rr_stress, "../Met/met_rr_stress_named.csv", row.names = F, quote = F)
 ```
 
-## Crossvalidation design 
+## Crossvalidation design -- randon repeat subsampling
 ```{r}
 # 1. loading data
 ## 1.1 Read met data
@@ -305,8 +310,6 @@ Mcs.trt = scale(met_rr_stress[,-c(1:2)])
 Mchnt.trt = tcrossprod(Mcs.trt)/ncol(Mcs.trt)
 M.rr.trt = cbind.data.frame(NSFTV_ID = rownames(Mchnt.trt), Mchnt.trt)
 
-
-
 ## Convert Geno into G matrix.
 load("../../../Geno/geno.rr.RData") #geno_rr
 geno <- geno_rr
@@ -381,10 +384,7 @@ p_met_control = pca_plot_drawing_func(suspop = met_control.suspop, name = 'met_c
 p_met_control
 p_met_stress = pca_plot_drawing_func(suspop = met_stress.suspop, name = 'met_stress')
 p_met_stress
-```
 
-
-```{r, echo = TRUE, eval=TRUE}
 library(ggpubr)
 ggarrange(NULL,
           p_met_control, 
@@ -400,6 +400,47 @@ dev.print(pdf, file="../../../temp/pca_met.pdf", height=10, width=7)
 
 ```
 
+## Cross-Validation design -- leave-one-subpopulation-out
+```{r}
+# 1. loading data
+## 1.1 Read met data
+met_rr_control <- read.csv(file = file.path(met_path, '/met_rr_control_named.csv'))
+met_rr_stress <- read.csv(file = file.path(met_path, '/met_rr_stress_named.csv'))
+subpopulation <- read.csv(file = file.path(met_path, "/raw_data/subpopulation.csv"))
+subss = c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')
+
+nCV <- as.numeric(length(subss)) # times of CV
+
+# Cross-Validation
+for (i in 1:nCV) {
+  # random-sampling to decide testing & reference accessions
+  cat("Now running nCV: ", subss[i], "\n")
+  #i = 1
+  con = met_rr_control
+  trt = met_rr_stress
+  
+  test.ix.con <- which(subpopulation$Subpopu %in% subss[i])
+  train.ix.con = setdiff(1:nrow(con), test.ix.con) 
+  test.ix.trt <- which(subpopulation$Subpopu %in% subss[i])
+  train.ix.trt = setdiff(1:nrow(trt), test.ix.trt) 
+  
+  
+  test = rbind.data.frame(con[test.ix.con,], trt[test.ix.trt,])
+  train = rbind.data.frame(con[train.ix.con,], trt[train.ix.trt,])
+
+  train$set = "train"
+  test$set = "test"
+  table(test$Treatment); table(train$Treatment) 
+  cv = rbind.data.frame(train, test)
+  cv = dplyr::arrange(cv, Treatment, NSFTV_ID, by_group = T)
+  cv = merge(cv, subpopulation, by = 'NSFTV_ID')
+  
+  cv_dir_path = file.path(paste0(met_path, "/CrossValidation_subpop/cv_",i))
+  dir.create(cv_dir_path)
+  write.csv(cv, paste0(cv_dir_path, "/met_cv_",i,".csv"), row.names = F, quote = F)
+}
+
+```
 
 
 

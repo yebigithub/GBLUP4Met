@@ -16,7 +16,8 @@ return(met_names)
 load_pred_corr_func <- function(path, namm, kernel){
   PredCorr_conL <- list()
   PredCorr_trtL <- list()
-  for (i in 1:100){
+  nCV = 100
+  for (i in 1:nCV){
     PredCorr_conL[[i]] <- readRDS(file=file.path(path,paste0("Control_",namm,"cv_",i,".RDS")))
     PredCorr_trtL[[i]] <- readRDS(file=file.path(path,paste0("Stress_",namm,"cv_",i,".RDS")))
   }
@@ -32,7 +33,7 @@ load_pred_corr_func <- function(path, namm, kernel){
   temp1 <- reshape2::melt(corr.c.df)
   temp2 <- reshape2::melt(corr.t.df)
   temp3 <- rbind.data.frame(temp1,temp2)
-  temp3$group <- rep(c("Control", "Stress"), each = 6600)
+  temp3$group <- rep(c("Control", "Stress"), each = 66*nCV)
   colnames(temp3) <- c("CV", "Met", "Corr", "Treatment")
   temp3$Kernel = kernel
   temp3$Met = factor(temp3$Met, levels = met_names)
