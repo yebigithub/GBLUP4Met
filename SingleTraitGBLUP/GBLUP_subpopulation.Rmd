@@ -65,7 +65,16 @@ dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width =
 
 ```{r}
 gblup = mu_perMet
+colnames(gblup)[colnames(gblup) == 'value'] = 'Corr_gblup'
 subpop = df
+colnames(subpop)[colnames(subpop) == "CV"] <- "CV_subpop"
+
+subpop_gblup = merge(subpop, gblup, by=c('Met', 'Treatment'))
+
+subpop_gblup$diff = (subpop_gblup$Corr - subpop_gblup$Corr_gblup)/subpop_gblup$Corr_gblup * 100
+
+mean1 = ddply(subpop_gblup, c("Treatment", "CV_subpop"), summarise, corr.mean=mean(diff, na.rm=T))
+print(mean1)
 ```
 
 
