@@ -6,6 +6,7 @@ output: html_document
 ---
 
 ```{r}
+setwd("~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/Githubs/GBLUP4Met")
 library(tidyverse)
 library(ggplot2)
 library(plyr)
@@ -25,25 +26,58 @@ met_names = met_name_func(mode = 'name')
 
 ##Loading pred corr 
 ```{r}
-path.bglr = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_subpopulation"
-PreCorr = load_pred_corr_func(path=path.bglr, kernel = "BGLR", namm='bglr')
+path.bglr_subpop = "~/Library/CloudStorage/OneDrive-VirginiaTech/Research/Codes/research/RiceUNLMetabolites/GBLUP4Met/outputs/GBLUP_subpopulation"
+
+load_pred_corr_func_subpop <- function(path, namm, kernel){
+  PredCorr_conL <- list()
+  PredCorr_trtL <- list()
+  nCV = 4
+  for (i in 1:nCV){
+    PredCorr_conL[[i]] <- readRDS(file=file.path(path,paste0("Control_",namm,"cv_",i,".RDS")))
+    PredCorr_trtL[[i]] <- readRDS(file=file.path(path,paste0("Stress_",namm,"cv_",i,".RDS")))
+  }
+  
+  corr.c.df <- do.call(rbind, PredCorr_conL)
+  corr.c.df = corr.c.df[,1:66]
+  colnames(corr.c.df)= met_names
+  
+  corr.t.df <- do.call(rbind, PredCorr_trtL)
+  corr.t.df = corr.t.df[,1:66]
+  colnames(corr.t.df) = met_names
+  
+  temp1 <- reshape2::melt(corr.c.df)
+  temp2 <- reshape2::melt(corr.t.df)
+  temp3 <- rbind.data.frame(temp1,temp2)
+  temp3$group <- rep(c("Control", "Stress"), each = 66*nCV)
+  colnames(temp3) <- c("CV", "Met", "Corr", "Treatment")
+  temp3$Kernel = kernel
+  temp3$Met = factor(temp3$Met, levels = met_names)
+  temp3 = temp3 %>% arrange(CV, Treatment)
+  
+  return(temp3)
+}
+
+
+PreCorr_subpop = load_pred_corr_func_subpop(path=path.bglr_subpop, kernel = "subpop", namm='bglr_')
+
+PreCorr_subpop$CV = as.factor(PreCorr_subpop$CV)
+subss = c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')
+for(i in 1:4){
+PreCorr_subpop$CV = gsub(i, subss[i], PreCorr_subpop$CV)
+}
 ```
 
 
-# ######Boxplot for PredCorr BGLR-G
+# ######Scatterplot for PredCorr_subpop
 ```{r}
 library(plyr)
 
-df = PreCorr
+df = PreCorr_subpop
 mu <- ddply(df, "Treatment", summarise, corr.mean=mean(Corr, na.rm=T))
 head(mu)
 
 my_colors <- RColorBrewer::brewer.pal(8, "Dark2")[5:8]
-df$CV = as.factor(df$CV)
-subss = c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')
-for(i in 1:4){
-df$CV = gsub(i, subss[i], df$CV)
-}
+
 
 Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr), color = CV, fill = CV) + 
            facet_grid(rows = vars(Treatment))+
@@ -60,22 +94,66 @@ Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr), color = CV, fill = CV) +
           labs(fill = "Subpopulation prediction", color = "Subpopulation prediction") 
 
 Pred_Cor_boxplot
-dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width = 10)
+# dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width = 10)
 ```
+
+## Calculate difference between subpop with single-trait GBLUP
+```{r}
+BGLR_G_mu <- pred_mean_generator(PreCorr)
+
+
+PreCorr_subpop_L <- PreCorr_subpop %>% group_split(CV)
+names(PreCorr_subpop_L) <- unique(PreCorr_subpop$CV)
+
+subpop_G_mu_L <- lapply(PreCorr_subpop_L, pred_mean_generator)
+```
+
 
 ```{r}
-gblup = mu_perMet
-colnames(gblup)[colnames(gblup) == 'value'] = 'Corr_gblup'
-subpop = df
-colnames(subpop)[colnames(subpop) == "CV"] <- "CV_subpop"
+dff_sub_g_L = list()
+for (i in 1:length(subpop_G_mu_L)){
 
-subpop_gblup = merge(subpop, gblup, by=c('Met', 'Treatment'))
+  dff_sub_g_L[[i]]=pred_dff_generator(df1=BGLR_G_mu, 
+                   df2=subpop_G_mu_L[[i]], 
+                   Method=paste0(names(subpop_G_mu_L)[i]))
+}
+names(dff_sub_g_L) = names(subpop_G_mu_L)
 
-subpop_gblup$diff = (subpop_gblup$Corr - subpop_gblup$Corr_gblup)/subpop_gblup$Corr_gblup * 100
+dff_sub_g = do.call(rbind, dff_sub_g_L)
 
-mean1 = ddply(subpop_gblup, c("Treatment", "CV_subpop"), summarise, corr.mean=mean(diff, na.rm=T))
-print(mean1)
+df = dff_sub_g
+
 ```
+
+
+```{r}
+library(ggplot2)
+library(RColorBrewer)
+
+# Define colors
+my_colors <- RColorBrewer::brewer.pal(8, "Dark2")[5:8]
+
+# Ensure Method is a factor
+df$Method <- as.factor(df$Method)
+
+Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=value), color = Method, fill = Method) + 
+           facet_grid(rows = vars(Treatment))+
+           geom_point(aes(fill=Method, color = Method))+
+           geom_hline(aes(yintercept = 0), color = 'lightcoral', linetype = 'solid', linewidth = 0.5, alpha = 0.7) + 
+           scale_y_continuous(limits=c(-1000,600)) +
+           scale_fill_manual(values = ggplot2::alpha(my_colors, 0.7))+
+           scale_color_manual(values = my_colors)+
+           labs(x="Metabolite accumulation", y = "Prediction difference (%)") +
+           theme_bw()+
+           theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
+                 axis.text.y=element_text(size=8))+
+          labs(fill = "Subpopulation prediction", color = "Subpopulation prediction") 
+# Print the plot
+print(Pred_Cor_boxplot)
+dev.print(pdf, file="../../../temp/subpopulation_gblup_difference.pdf", height = 6, width = 10)
+# 
+```
+
 
 
 
