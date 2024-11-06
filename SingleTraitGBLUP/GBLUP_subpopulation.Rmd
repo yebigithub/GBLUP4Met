@@ -61,7 +61,7 @@ load_pred_corr_func_subpop <- function(path, namm, kernel){
 PreCorr_subpop = load_pred_corr_func_subpop(path=path.bglr_subpop, kernel = "subpop", namm='bglr_')
 
 PreCorr_subpop$CV = as.factor(PreCorr_subpop$CV)
-subss = c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')
+subss = tools::toTitleCase(c('aus', 'indica', 'temperate-japonica', 'tropical-japonica'))
 for(i in 1:4){
 PreCorr_subpop$CV = gsub(i, subss[i], PreCorr_subpop$CV)
 }
@@ -91,10 +91,10 @@ Pred_Cor_boxplot <- ggplot(df, aes(x=Met, y=Corr), color = CV, fill = CV) +
           # scale_color_brewer(palette = "Dark2")+
            theme(axis.text.x=element_text(size=8, angle=90, hjust=0.95, vjust=0.2),
                  axis.text.y=element_text(size=8))+
-          labs(fill = "Subpopulation prediction", color = "Subpopulation prediction") 
+          labs(fill = "Subpopulation predicted", color = "Subpopulation predicted") 
 
 Pred_Cor_boxplot
-# dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width = 10)
+dev.print(pdf, file="../../../temp/subpopulation_gblup.pdf", height = 6, width = 10)
 ```
 
 ## Calculate difference between subpop with single-trait GBLUP

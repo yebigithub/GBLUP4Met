@@ -296,8 +296,8 @@ write.csv(geno.rr, "../Geno/geno.rr.csv", quote = F, row.names = T)
 # #############################################
 ## Loading files
 ```{r}
-met_rr_control <- read.csv("../../../Met/met_rr_control_named.csv")
-met_rr_stress <- read.csv("../../../Met/met_rr_stress_named.csv")
+met_rr_control <- read.csv("../../Met/met_rr_control_named.csv")
+met_rr_stress <- read.csv("../../Met/met_rr_stress_named.csv")
 id_control <- met_rr_control$NSFTV_ID
 rownames(met_rr_control) = met_rr_control$NSFTV_ID
 rownames(met_rr_stress) = met_rr_stress$NSFTV_ID
@@ -311,19 +311,20 @@ Mchnt.trt = tcrossprod(Mcs.trt)/ncol(Mcs.trt)
 M.rr.trt = cbind.data.frame(NSFTV_ID = rownames(Mchnt.trt), Mchnt.trt)
 
 ## Convert Geno into G matrix.
-load("../../../Geno/geno.rr.RData") #geno_rr
+load("../../Geno/geno.rr.RData") #geno_rr
 geno <- geno_rr
 # map <- map_rr
-load("../../../Geno/GL.RData")
+load("../../Geno/GL.RData")
 G.rr = GL$Control
 G.rr = cbind.data.frame(NSFTV_ID = rownames(G.rr), G.rr)
 ```
 ## sub info
 ```{r}
 #read into subpop info
-panel_info_clean <- read.delim("../../../Geno/raw_data/panel_info_clean.txt")
+panel_info_clean <- read.delim("../../Geno/raw_data/panel_info_clean.txt")
 subpop <- panel_info_clean %>% filter(Sample.set == "RDP1")
 subpop$Other.accession.ID = gsub("NSFTV", "NSFTV_", subpop$Other.accession.ID)
+subpop$fastStructure.subpopulation.call = tools::toTitleCase(subpop$fastStructure.subpopulation.call)
 
 table(subpop$Other.accession.ID %in% rownames(G.rr))
 table(rownames(G.rr) %in% subpop$Other.accession.ID) #all in suspop txt file.
@@ -331,6 +332,7 @@ table(rownames(G.rr) %in% subpop$Other.accession.ID) #all in suspop txt file.
 table(subpop$Other.accession.ID %in% M.rr.con$NSFTV_ID)
 table(M.rr.con$NSFTV_ID %in% subpop$Other.accession.ID) #all in suspop txt file.
 all(M.rr.con$NSFTV_ID == M.rr.trt$NSFTV_ID)
+table(met_rr_control$NSFTV_ID %in% subpop$Other.accession.ID)
 ```
 
 ## Function for combine geno or met and subpop in one dataframe.
@@ -359,7 +361,7 @@ table(met_stress.suspop$Subpopu)
 
 suspop.df = data.frame(NSFTV_ID = met_control.suspop$NSFTV_ID,  
                        Subpopu = met_control.suspop$Subpopu)
-write.csv(suspop.df, file = file.path("../../../Met/raw_data/subpopulation.csv"), row.names = F, quote = F)
+# write.csv(suspop.df, file = file.path("../../../Met/raw_data/subpopulation.csv"), row.names = F, quote = F)
 ```
 
 ```{r, echo = TRUE, eval=TRUE}
@@ -379,7 +381,12 @@ pca_plot_drawing_func = function(suspop, name){
 }
 
 p_G = pca_plot_drawing_func(suspop = G.suspop, name = 'geno')
+p_G
+dev.print(pdf, file="../../temp/pca_geno_comb.pdf", height=6, width=9)
+```
 
+
+```{r, echo = TRUE, eval=TRUE}
 p_met_control = pca_plot_drawing_func(suspop = met_control.suspop, name = 'met_control')
 p_met_control
 p_met_stress = pca_plot_drawing_func(suspop = met_stress.suspop, name = 'met_stress')
@@ -396,7 +403,47 @@ ggarrange(NULL,
           # vjust=-0.1,
           legend = "right",
           common.legend = T)
-dev.print(pdf, file="../../../temp/pca_met.pdf", height=10, width=7)
+dev.print(pdf, file="../../temp/pca_met.pdf", height=10, width=7)
+
+```
+
+## Boxplot for metabolite within subpopulation groups
+```{r}
+met_control.suspop = pca_sub_func(MM=met_rr_control, subpop=subpop)
+table(met_control.suspop$Subpopu)
+
+met_stress.suspop = pca_sub_func(MM=met_rr_stress, subpop=subpop)
+table(met_stress.suspop$Subpopu)
+
+met_control.suspop.long= pivot_longer(met_control.suspop, names_to = "Met", values_to = 'Met_value', cols = -c("NSFTV_ID", "Treatment", "Subpopu"))
+met_control.suspop.long$Subpopu = as.factor(met_control.suspop.long$Subpopu)
+
+met_stress.suspop.long= pivot_longer(met_stress.suspop, names_to = "Met", values_to = 'Met_value', cols = -c("NSFTV_ID", "Treatment", "Subpopu"))
+met_stress.suspop.long$Subpopu = as.factor(met_stress.suspop.long$Subpopu)
+
+met.suspop.long = rbind(met_control.suspop.long, met_stress.suspop.long)
+
+met.suspop.long = met.suspop.long %>% filter(Subpopu %in% tools::toTitleCase(c('aus', 'indica', 'temperate-japonica', 'tropical-japonica')))
+library(ggplot2)
+met.suspop.long$Subpopu = as.factor(met.suspop.long$Subpopu)
+met.suspop.long$Treatment = factor(met.suspop.long$Treatment, levels=c('Stress', 'Control'))
+ggplot(met.suspop.long, aes(x = Subpopu, y = Met_value, fill = Treatment)) +
+  geom_boxplot() +
+  labs(x = "Subpopulation", y = "Metabolite accumulation") +
+  theme_minimal()
+
+# Perform ANOVA
+
+anova_result <- aov(Met_value ~ Subpopu, data = met.suspop.long)
+
+# View the summary of the ANOVA
+summary(anova_result)
+
+# Perform Tukey's HSD test
+tukey_result <- TukeyHSD(anova_result)
+
+# View the Tukey HSD results
+print(tukey_result)
 
 ```
 
